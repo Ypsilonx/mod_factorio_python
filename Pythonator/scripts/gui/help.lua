@@ -10,7 +10,7 @@ M.TEXT_WIDTH = 620
 M.HEIGHT = 560
 
 --- Textové karty: id → klíče locale help-<id>-title a help-<id>-text.
-M.SECTIONS = { "basics", "signals", "language", "library" }
+M.SECTIONS = { "basics", "signals", "language", "library", "performance" }
 
 --- Příklady: id → klíče help-example-<id>-title a -desc; kód se vkládá do editoru.
 M.EXAMPLES = {
@@ -26,12 +26,12 @@ M.EXAMPLES = {
   {
     id = "sequence",
     code = table.concat({
+      "config(interval=60)",
       "step = 0",
       "",
       "def loop():",
       "    global step",
-      "    if timer(\"step\", 60):",
-      "        step = (step + 1) % 4",
+      "    step = (step + 1) % 4",
       "    out.clear()",
       "    out[\"signal-\" + \"ABSU\"[step]] = 1",
     }, "\n"),

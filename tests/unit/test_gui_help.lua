@@ -38,6 +38,18 @@ return {
       A.truthy(prog, "příklad " .. i .. " (" .. ex.id .. "): " .. tostring(err and err.key))
     end
   end },
+  { "nápověda má kartu Výkon a příklad Sekvence běží s intervalem (nezapisuje výstup každý tick)", function()
+    local help = require("scripts.gui.help")
+    local has = false
+    for _, id in ipairs(help.SECTIONS) do has = has or id == "performance" end
+    A.truthy(has, "karta performance")
+    for _, ex in ipairs(help.EXAMPLES) do
+      if ex.id == "sequence" then
+        A.truthy(ex.code:find("config%(interval=60%)"), "sekvence s config(interval=60)")
+        A.eq(ex.code:find("timer"), nil, "bez timeru (interval ho nahrazuje)")
+      end
+    end
+  end },
   { "tlačítko ? otevře nápovědu s kartami, křížek ji zavře", function()
     local t = setup()
     click(t, t.refs.help)

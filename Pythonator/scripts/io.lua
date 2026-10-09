@@ -35,7 +35,9 @@ function M.detach_outputs(outputs)
 end
 
 --- Požadovaný výstup drátu: out + out_red/out_green, součet přeteče do int32 jako v obvodové síti.
-local function desired(both, single)
+--- Bez out_red/out_green je to přímo tabulka `out` (jen se čte – žádná kopie a alokace každý zápis).
+function M.desired(both, single)
+  if next(single) == nil then return both end
   local sum = {}
   for k, v in pairs(both) do sum[k] = v end
   for k, v in pairs(single) do sum[k] = R.wrap32((sum[k] or 0) + v) end
@@ -112,7 +114,7 @@ function M.flush(ctl)
       state = { sent = {}, slot = {}, free = {}, top = 0 }
       ctl.wires[wire] = state
     end
-    if out.valid and not flush_wire(out, state, desired(ctl.out.both, ctl.out[wire])) then ok = false end
+    if out.valid and not flush_wire(out, state, M.desired(ctl.out.both, ctl.out[wire])) then ok = false end
   end
   return ok
 end

@@ -97,6 +97,21 @@ Nepodporuje třídy, `import`, `try/except`, `lambda`, comprehensions ani f-stri
 Odchylky od Pythonu: `int` a `float` se nerozlišují, takže `6 / 2` vypíše `3`. Funkce `def` na nejvyšší úrovni
 jsou dostupné i před svou definicí.
 
+## Výkon (UPS)
+
+Každé spuštění `loop()` stojí čas procesoru. Cenu všech budov ukáže F4 → `show-time-usage` → řádek
+`mod-Pythonator`, cenu jednoho programu pruh v okně. Rozpočet ticku je 16,7 ms.
+
+1. **Interval** je největší úspora: `config(interval=N)` spustí `loop()` jen každý N-tý tick. Pro bezpečnost
+   a regulaci se hodí 1, pro výrobu a sklady 10–60, pro pomalé věci 300 a víc. Budovy se stejným intervalem
+   běží každá v jiném ticku, takže nevzniká špička.
+2. **Výstup zapisuj jen při změně.** `out.clear()` a nový zápis každý tick stojí víc než samotný program.
+3. **Čti jen potřebné signály.** `inp["x"]` je levné, procházení všech signálů načte celou síť.
+
+Orientačně, 150 budov s jednoduchou sekvencí (měřeno ve hře): zápis každý tick ~2,4 ms za tick, zápis
+jen při změně ~1,2 ms, `config(interval=60)` ~0,2 ms. Pár desítek programů s intervalem 1 je v pořádku
+i ve velké továrně. Stovky budov s intervalem 1 už je vhodné ladit.
+
 ## Pojistky
 
 - **Watchdog** zastaví program, který v jednom ticku udělá víc operací než limit (výchozí 10 000).

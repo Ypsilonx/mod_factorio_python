@@ -105,6 +105,7 @@ Akce Play/Pauza/Reset/Krok a pohled na stav (`actions.view` → co zobrazit a po
 - [ ] Glyfy ▶ ⏸ ⟳ ⏭ ● v textech stavu, tooltipech a nápovědě se vykreslí (ne čtverečky).
 - [ ] Po uložení a načtení s otevřeným oknem zavřou okno E i Esc (ne jen ✕).
 - [ ] Příklad „Sekvence“ v nápovědě: `"ABSU"[step]` se zobrazí doslova (hranaté závorky nevezme jako rich text).
+- [ ] Nápověda → karta Výkon je čitelná (odrážky •, čísla); 150 budov s příkladem „Sekvence“ zapnutých najednou: v F4 → show-time-usage u mod-Pythonator nejsou špičky jednou za 60 ticků (max blízko průměru).
 - [ ] Okno nad budovou se 300 signály na vstupu a velkým listem v globálu: UPS se viditelně nezmění.
 - [ ] Shift+pravý / levý klik mezi dvěma budovami přenese kód.
 - [ ] Ctrl+C / Ctrl+V budovy přenese kód.
@@ -147,6 +148,20 @@ Vývoj: první měření hyst 108 ms → 50,5 (řazení klíčů jen při změn�
 nastavení a energie) → 31,2 (rychlé cesty překladače: `for … in x.items()/keys()/values()` bez seznamu,
 `a if c else b` s literálem bez closure, `d.get`/`l.append` bez dispatch, číselné operace bez převodů)
 → 14,8 / 29,7 (sdílené čtení sítě).
+
+### Sekvence bez čtení vstupů (`PERF_N=150 PERF_MODES="idle seq-tick seq-change seq-60" bash tools/run-perf.sh`)
+| Režim (150 budov, příklad „Sekvence“) | ms/tick | Pythonator (bez idle 0,14) | µs na budovu |
+|---|---|---|---|
+| seq-tick – `out.clear()` + zápis každý tick | 0,98 (před zrychlením zápisu 1,07) | 0,84 | 5,6 |
+| seq-change – zápis jen při změně (timer) | 0,55 | 0,41 | 2,7 |
+| seq-60 – `config(interval=60)` | 0,19 | 0,05 | 0,4 |
+
+Ve hře s F4 → show-time-usage hráč naměřil u seq-tick (před zrychlením zápisu) 2,36 ms, seq-change 1,22 ms a
+seq-60 0,17 ms. Živá hra s profilerem je zhruba 2× dražší než `--benchmark`, poměry sedí. Pevná režie jednoho
+spuštění `loop()` (plánovač, kontrola energie, watchdog) je ~3 µs ve hře.
+
+Budovy s intervalem > 1 běží ve fázi `unit_number % interval` (`scheduler.first_tick`): zapnuté najednou se
+rozloží do různých ticků místo jedné špičky za interval. Fáze se drží i po načtení hry a změně modů.
 
 Lokální rychlé měření jazyka bez hry: `lua tools/bench-lang.lua` (µs na loop() pro sadu programů,
 napodobené API – čísla jen pro porovnání změn).

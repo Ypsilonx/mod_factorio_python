@@ -2,6 +2,7 @@
 -- tools/run-perf.sh): idle = jen zdroj a proud, pass = Pythonator s prázdným loop(), hyst = Pythonator
 -- s hysterezí nad 20 signály, items = jen průchod inp.items(), get20 = 20× čtení signálu po jednom,
 -- hyst-own = hystereze, ale každá budova má vlastní zdroj (síť se nesdílí),
+-- seq-tick / seq-change / seq-60 = sekvence signálů bez čtení vstupů (výstup každý tick / jen při změně / interval 60),
 -- decider = vanilla rozhodovací kombinátor nad stejnými signály.
 local MODE = require("mode")
 local N = require("count")
@@ -32,6 +33,13 @@ local PROGRAMS = {
   ["hyst-own"] = HYST,
   items = "def loop():\n    for k, v in inp.items():\n        pass",
   get20 = table.concat(GET20, "\n"),
+  -- sekvence bez čtení vstupů: přepis výstupu každý tick / jen při změně / s intervalem (nápověda → Výkon)
+  ["seq-tick"] = "step = 0\ndef loop():\n    global step\n    if timer('s', 60):\n        step = (step + 1) % 4\n"
+    .. "    out.clear()\n    out['signal-' + 'ABSU'[step]] = 1",
+  ["seq-change"] = "step = 0\ndef loop():\n    global step\n    if timer('s', 60):\n        step = (step + 1) % 4\n"
+    .. "        out.clear()\n        out['signal-' + 'ABSU'[step]] = 1",
+  ["seq-60"] = "config(interval=60)\nstep = 0\ndef loop():\n    global step\n    step = (step + 1) % 4\n"
+    .. "    out.clear()\n    out['signal-' + 'ABSU'[step]] = 1",
 }
 
 local W = defines.wire_connector_id

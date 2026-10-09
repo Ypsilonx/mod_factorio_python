@@ -22,7 +22,7 @@ end
 --- Po změně stavu (nahrání kódu, Play, Pauza, Reset, Krok): naplánuje běžící kontrolér na příští tick
 --- a překreslí stavovou LED.
 function M.wake(ctl)
-  if ctl.running and not ctl.error then scheduler.add(ctl.unit, game.tick + 1) end
+  if ctl.running and not ctl.error then scheduler.add(ctl.unit, scheduler.first_tick(ctl.unit, ctl.interval, game.tick)) end
   indicator.update(ctl)
 end
 

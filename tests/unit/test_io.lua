@@ -97,6 +97,14 @@ return {
     ctl.out.both["signal-A"], ctl.out.both["signal-B"] = 1, 2
     A.eq(io.flush(ctl), false, "nevešlo se")
   end },
+  { "výkon: bez out_red/out_green se požadovaný stav drátu nekopíruje", function()
+    local io = setup()
+    local both, single = { ["signal-A"] = 1 }, {}
+    A.eq(io.desired(both, single), both, "přímo tabulka out (žádná alokace)")
+    local sum = io.desired(both, { ["signal-A"] = 2, ["signal-B"] = 3 })
+    A.same(sum, { ["signal-A"] = 3, ["signal-B"] = 3 }, "s jednotlivým drátem součet")
+    A.same(both, { ["signal-A"] = 1 }, "out se nezměnil")
+  end },
   { "neplatný výstup (zničený jiným modem) se přeskočí", function()
     local io, ctl = setup()
     ctl.outputs.red.valid = false
