@@ -27,7 +27,7 @@ def loop():
 | ⏸ Pauza | zastaví volání `loop()`, stav zůstane. Při pauze jde kód upravovat. |
 | ⟳ Reset | vynuluje globální proměnné a znovu spustí inicializaci nahraného kódu. |
 | ⏭ Krok | při pauze provede jeden `loop()`. |
-| ? | nápověda s příklady, které jde vložit do editoru. |
+| ? | nápověda s příklady, které jde vložit do editoru. Stejné texty a příklady jsou i v Tipech a tricích (kategorie Pythonator), dostupné kdykoli bez budovy. |
 | Stav | BĚŽÍ / PAUZA / CHYBA / BEZ PROUDU, tick a cena posledního běhu proti limitu watchdogu. |
 | Panely | vstupy z červeného a zeleného drátu, výstupy (skutečný stav drátu), globální proměnné, prvky knihovny. |
 | Log | výpis `print()` (posledních 50 řádků). |

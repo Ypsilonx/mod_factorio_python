@@ -24,7 +24,7 @@
 | `editor.lua` | text-box s čísly řádků, výška podle řádků, posun na změněný řádek |
 | `status.lua` | lišta tlačítek, panel stavu (stav, tick, cena), pruh chyby |
 | `panels.lua` | vstupy R/G, výstupy (stav drátu), globály, prvky knihovny, log |
-| `help.lua` | okno nápovědy a příklady |
+| `help.lua` | okno nápovědy a příklady; seznam karet a kód příkladů sdílí s Tipy a triky (`prototypes/tips.lua`) |
 | `events.lua` | obsluha událostí GUI podle tagu `pyntr_action`, obnova `on_nth_tick`, úklid po odchodu hráče a změně modů |
 
 Akce Play/Pauza/Reset/Krok a pohled na stav (`actions.view` → co zobrazit a povolit) jsou v `scripts/actions.lua`, sdílené s remote interface. GUI se testuje unit testy s napodobeninou `LuaGuiElement` (`tests/unit/fake_gui.lua`); `test_gui_names.lua` hlídá jména prvků proti `runtime-api.json` a existenci stylů, integrační `cases/gui.lua` font a styly ve hře.
@@ -106,6 +106,7 @@ Akce Play/Pauza/Reset/Krok a pohled na stav (`actions.view` → co zobrazit a po
 - [ ] Po uložení a načtení s otevřeným oknem zavřou okno E i Esc (ne jen ✕).
 - [ ] Příklad „Sekvence“ v nápovědě: `"ABSU"[step]` se zobrazí doslova (hranaté závorky nevezme jako rich text).
 - [ ] Nápověda → karta Výkon je čitelná (odrážky •, čísla); 150 budov s příkladem „Sekvence“ zapnutých najednou: v F4 → show-time-usage u mod-Pythonator nejsou špičky jednou za 60 ticků (max blízko průměru).
+- [ ] Tipy a triky (F1 / menu): kategorie Pythonator je dostupná hned v nové hře (bez výzkumu a budovy), záznamy Jak začít, Signály, Jazyk, Knihovna, Výkon, Příklady; odrážky a tučné názvy funkcí se vykreslí, kód příkladů neproporcionálním písmem.
 - [ ] Okno nad budovou se 300 signály na vstupu a velkým listem v globálu: UPS se viditelně nezmění.
 - [ ] Shift+pravý / levý klik mezi dvěma budovami přenese kód.
 - [ ] Ctrl+C / Ctrl+V budovy přenese kód.
