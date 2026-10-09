@@ -27,6 +27,10 @@
 |---|---|---|
 | Limit watchdogu (průchod cyklem a volání funkce = 1; vestavěné funkce a operace s kontejnery/řetězci platí počtem prvků či bajtů výsledku, PŘED alokací) | předává hostitel do `vm.run(inst, what, limit)` – map setting `pyntr-watchdog-limit` (`Pythonator/settings.lua`, 100–200 000, strop `LIMIT_MAX`) | 10 000 |
 | Limit paměti (prvky list/tuple/dict v globálech; řetězec = 1 + délka // 100) | `vm.check_memory(G, limit)` – map setting `pyntr-memory-limit` (`Pythonator/settings.lua`, 100–200 000) | 10 000 |
+| Spotřeba budovy | `ENERGY_USAGE` v `Pythonator/prototypes/entity.lua` | 50 kW |
+| Tint dočasné grafiky a ikony | `TINT` v `Pythonator/prototypes/entity.lua` | modrá |
+| Suroviny receptu (kandidáti s náhradami) | `INGREDIENTS` v `Pythonator/prototypes/recipe.lua` | 5× advanced-circuit, 2× decider, 2× arithmetic, 5× steel-plate |
+| Výzkum: povinné prerekvizity, věda navíc, cena | `EXTRA_TECHS`, `EXTRA_PACKS`, `COUNT_MULTIPLIER` v `Pythonator/prototypes/research.lua` | circuit-network; modrá věda; 1,5× nejdražší prerekvizita |
 
 ## Známé odchylky od Pythonu
 - `int` a `float` se nerozlišují: `6 / 2` vypíše `3`, ne `3.0`; čísla nad 2^53 ztrácí přesnost.
