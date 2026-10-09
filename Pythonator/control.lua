@@ -7,6 +7,7 @@ local lifecycle = require("scripts.lifecycle")
 local scheduler = require("scripts.scheduler")
 local indicator = require("scripts.indicator")
 local blueprint = require("scripts.blueprint")
+local gui_events = require("scripts.gui.events")
 require("scripts.remote")
 
 local FILTERS = { { filter = "name", name = lifecycle.DATA.entity } }
@@ -63,8 +64,8 @@ end
 script.on_event(defines.events.on_player_setup_blueprint, blueprint.on_setup)
 script.on_event(defines.events.on_entity_settings_pasted, blueprint.on_pasted)
 
--- Vanilla okno kombinátoru by hráči dovolilo nastavit operaci a posílat vlastní výstup – do GUI z plánu 3
--- se neotevírá (kód se zatím nahrává přes remote interface "pyntr").
-script.on_event(defines.events.on_gui_opened, function(event)
-  if lifecycle.is_ours(event.entity) then game.get_player(event.player_index).opened = nil end
-end)
+-- Okno Pythonatoru místo vanilla okna kombinátoru (to by dovolilo nastavit operaci a vlastní výstup).
+script.on_event(defines.events.on_gui_opened, gui_events.on_gui_opened)
+script.on_event(defines.events.on_gui_closed, gui_events.on_gui_closed)
+script.on_event(defines.events.on_gui_click, gui_events.on_gui_click)
+script.on_event(defines.events.on_gui_text_changed, gui_events.on_gui_text_changed)

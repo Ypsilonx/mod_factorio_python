@@ -1,7 +1,7 @@
 local A = require("assert")
 
 local MODULES = { "errors", "signals", "lexer", "parser", "checker", "runtime", "builtins", "signal_io",
-  "codegen", "compiler", "vm" }
+  "codegen", "compiler", "vm", "vector", "elements" }
 
 --- Klíče sekce [pyntr-err] v locale souboru.
 local function locale_keys(path)
