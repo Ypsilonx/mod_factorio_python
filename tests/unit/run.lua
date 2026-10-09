@@ -3,7 +3,7 @@
 package.path = "Pythonator/?.lua;tests/unit/?.lua;" .. package.path
 
 --- Seznam testovacích sad; každá vrací pole { "název", funkce }.
-local SUITES = { "test_locale", "test_errors" }
+local SUITES = { "test_locale", "test_errors", "test_signals" }
 
 local pass, fail = 0, 0
 for _, suite in ipairs(SUITES) do
