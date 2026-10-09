@@ -293,5 +293,171 @@ function M.parse_expression(src)
   return e
 end
 
+
+--- Konec jednoduchého příkazu: NEWLINE (nebo EOF).
+function P:end_line()
+  if self:accept("NEWLINE") or self:is("EOF") then return end
+  fail_at(self:peek())
+end
+
+local AUG = {}
+for _, op in ipairs({ "+=", "-=", "*=", "/=", "//=", "%=", "**=", "&=", "|=", "^=", "<<=", ">>=" }) do AUG[op] = true end
+
+--- Ověří, že výraz je platný cíl přiřazení (rozšířené přiřazení nepovoluje n-tice).
+local function check_target(e, aug)
+  if e.k == "Name" or e.k == "Subscript" then return end
+  if not aug and (e.k == "Tuple" or e.k == "List") then
+    for _, el in ipairs(e.elts) do check_target(el, false) end
+    return
+  end
+  errors.raise(e.line, e.col, "bad-target")
+end
+
+--- Jednoduchý příkaz (bez koncového NEWLINE).
+function P:simple()
+  local tk = self:peek()
+  if tk.t == "KW" then
+    if tk.v == "pass" then self:next(); return node("Pass", tk, {}) end
+    if tk.v == "break" then self:next(); return node("Break", tk, {}) end
+    if tk.v == "continue" then self:next(); return node("Continue", tk, {}) end
+    if tk.v == "return" then
+      self:next()
+      local value
+      if starts_expr(self:peek()) then value = self:expr_list() end
+      return node("Return", tk, { value = value })
+    end
+    if tk.v == "global" then
+      self:next()
+      local names = { self:expect("NAME").v }
+      while self:accept("OP", ",") do names[#names + 1] = self:expect("NAME").v end
+      return node("Global", tk, { names = names })
+    end
+  end
+  local first = self:expr_list()
+  local op = self:peek()
+  if op.t == "OP" and op.v == "=" then
+    local items = { first }
+    while self:accept("OP", "=") do items[#items + 1] = self:expr_list() end
+    local value = table.remove(items)
+    for _, t in ipairs(items) do check_target(t, false) end
+    return node("Assign", tk, { targets = items, value = value })
+  end
+  if op.t == "OP" and AUG[op.v] then
+    self:next()
+    check_target(first, true)
+    return node("AugAssign", tk, { target = first, op = op.v:sub(1, -2), value = self:expr_list() })
+  end
+  return node("Expr", tk, { value = first })
+end
+
+--- Blok po `:` – odsazený, nebo jednoduchý příkaz na stejném řádku.
+function P:block()
+  self:expect("OP", ":")
+  local body = {}
+  if self:accept("NEWLINE") then
+    local tk = self:peek()
+    if tk.t ~= "INDENT" then errors.raise(tk.line, tk.col, "expected-indent") end
+    self:next()
+    while not self:accept("DEDENT") do self:statement(body) end
+  else
+    body[1] = self:simple()
+    self:end_line()
+  end
+  return body
+end
+
+--- if / elif (elif se vnoří do orelse).
+function P:if_stmt()
+  local tk = self:next()
+  local test = self:expr()
+  local n = node("If", tk, { test = test, body = self:block(), orelse = {} })
+  if self:is("KW", "elif") then
+    n.orelse = { self:if_stmt() }
+  elseif self:accept("KW", "else") then
+    n.orelse = self:block()
+  end
+  return n
+end
+
+--- Prvek cíle cyklu for: jméno nebo n-tice v závorkách.
+function P:target_atom()
+  local tk = self:next()
+  if tk.t == "NAME" then return node("Name", tk, { id = tk.v }) end
+  if tk.t == "OP" and tk.v == "(" then
+    local t = self:target_list()
+    self:expect("OP", ")")
+    return t
+  end
+  fail_at(tk)
+end
+
+--- Cíl cyklu for: jeden prvek nebo n-tice oddělená čárkami.
+function P:target_list()
+  local first = self:peek()
+  local t = self:target_atom()
+  if not self:is("OP", ",") then return t end
+  local elts = { t }
+  while self:accept("OP", ",") do
+    if not (self:is("NAME") or self:is("OP", "(")) then break end
+    elts[#elts + 1] = self:target_atom()
+  end
+  return node("Tuple", first, { elts = elts })
+end
+
+function P:for_stmt()
+  local tk = self:next()
+  local target = self:target_list()
+  self:expect("KW", "in")
+  local iter = self:expr_list()
+  return node("For", tk, { target = target, iter = iter, body = self:block() })
+end
+
+function P:def_stmt()
+  local tk = self:next()
+  local name = self:expect("NAME")
+  self:expect("OP", "(")
+  local params = {}
+  while not self:accept("OP", ")") do
+    local p = self:peek()
+    if p.t == "OP" and (p.v == "*" or p.v == "**") then errors.raise(p.line, p.col, "unsupported", p.v .. "args") end
+    params[#params + 1] = self:expect("NAME").v
+    if self:is("OP", "=") then
+      local d = self:peek()
+      errors.raise(d.line, d.col, "defaults-unsupported")
+    end
+    if not self:accept("OP", ",") then self:expect("OP", ")"); break end
+  end
+  return node("Def", tk, { name = name.v, params = params, body = self:block() })
+end
+
+--- Jeden příkaz (složený nebo jednoduchý) připojený do seznamu out.
+function P:statement(out)
+  local tk = self:peek()
+  if tk.t == "KW" then
+    if tk.v == "if" then out[#out + 1] = self:if_stmt(); return end
+    if tk.v == "while" then
+      self:next()
+      local test = self:expr()
+      out[#out + 1] = node("While", tk, { test = test, body = self:block() })
+      return
+    end
+    if tk.v == "for" then out[#out + 1] = self:for_stmt(); return end
+    if tk.v == "def" then out[#out + 1] = self:def_stmt(); return end
+  end
+  if tk.t == "INDENT" then errors.raise(tk.line, tk.col, "unexpected-indent") end
+  out[#out + 1] = self:simple()
+  self:end_line()
+end
+
+--- Rozparsuje celý program.
+--- @param src string
+--- @return table Module
+function M.parse(src)
+  local p = M.new(lexer.tokenize(src))
+  local body = {}
+  while not p:is("EOF") do p:statement(body) end
+  return { k = "Module", body = body, line = 1, col = 1 }
+end
+
 M.Parser = P
 return M
