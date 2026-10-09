@@ -123,4 +123,38 @@ return {
     t.events.on_gui_opened({ player_index = 1, entity = { valid = true, name = "arithmetic-combinator" } })
     A.eq(t.window.get(t.player), nil, "žádné okno")
   end },
+  { "odchod hráče ze hry zavře okno, odebrání hráče uklidí stav", function()
+    local t = setup()
+    local refs = open(t, 1)
+    t.events.on_player_left_game({ player_index = 1 })
+    A.eq(refs.frame.valid, false, "okno zavřené při odchodu")
+    open(t, 1)
+    game.players[1] = nil
+    t.events.on_player_removed({ player_index = 1 })
+    A.eq(storage.gui[1], nil, "stav odebraného hráče smazán")
+  end },
+  { "změna konfigurace modů zavře okna i nápovědu a uklidí stav", function()
+    local t = setup()
+    local refs = open(t, 1)
+    t.events.on_gui_click({ player_index = 1, element = refs.help })
+    local help = t.player.gui.screen.pyntr_help
+    -- zbytek okna ze staré verze bez záznamu ve storage
+    local stale = t.player.gui.screen.add({ type = "frame", name = "pyntr_stale" })
+    storage.gui[7] = { unit = 1, refs = { frame = { valid = false } } }
+    t.events.on_configuration_changed()
+    A.eq(refs.frame.valid, false, "hlavní okno zavřené")
+    A.eq(help.valid, false, "nápověda zavřená")
+    A.eq(stale.valid, false, "cizí zbytek okna s prefixem odstraněn")
+    A.eq(next(storage.gui), nil, "storage.gui prázdné")
+  end },
+  { "neplatné prvky okna: obnova okno bez chyby zavře", function()
+    local t = setup()
+    local refs = open(t, 1)
+    refs.frame.valid = false
+    t.events.on_refresh()
+    A.eq(storage.gui[1], nil, "stav smazán")
+    storage.gui[1] = { unit = 99, refs = { frame = { valid = true, destroy = function() end } } }
+    t.events.on_refresh()
+    A.eq(storage.gui[1], nil, "okno nad neexistující budovou zavřené")
+  end },
 }

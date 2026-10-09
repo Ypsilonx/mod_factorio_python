@@ -20,7 +20,10 @@ script.on_init(function()
   storage.schedule = {}
 end)
 
-script.on_configuration_changed(lifecycle.on_configuration_changed)
+script.on_configuration_changed(function()
+  lifecycle.on_configuration_changed()
+  gui_events.on_configuration_changed()
+end)
 
 script.on_event(defines.events.on_tick, function(event) scheduler.on_tick(event.tick) end)
 
@@ -69,5 +72,7 @@ script.on_event(defines.events.on_gui_opened, gui_events.on_gui_opened)
 script.on_event(defines.events.on_gui_closed, gui_events.on_gui_closed)
 script.on_event(defines.events.on_gui_click, gui_events.on_gui_click)
 script.on_event(defines.events.on_gui_text_changed, gui_events.on_gui_text_changed)
+script.on_event(defines.events.on_player_left_game, gui_events.on_player_left_game)
+script.on_event(defines.events.on_player_removed, gui_events.on_player_removed)
 -- Obnova otevřených oken (bez otevřeného okna handler hned skončí).
 script.on_nth_tick(gui_events.REFRESH_TICKS, gui_events.on_refresh)

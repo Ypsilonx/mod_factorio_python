@@ -8,6 +8,7 @@ runner.register(require("cases.building"))
 runner.register(require("cases.timing"))
 runner.register(require("cases.lang"))
 runner.register(require("cases.persistence"))
+runner.register(require("cases.gui"))
 
 script.on_init(runner.on_init)
 script.on_load(runner.on_load)

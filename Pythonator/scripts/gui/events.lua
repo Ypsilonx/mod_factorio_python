@@ -129,6 +129,33 @@ function M.on_refresh()
   end
 end
 
+--- Odchod hráče ze hry: okno i nápověda se zavřou (po návratu je otevře znovu).
+function M.on_player_left_game(event)
+  local player = game.get_player(event.player_index)
+  if player then
+    window.close(player)
+    help.close(player)
+  end
+end
+
+--- Odebrání hráče: jeho prvky zanikly s ním, uklidí se jen stav.
+function M.on_player_removed(event)
+  window.all()[event.player_index] = nil
+end
+
+--- Změna modů nebo verze: prvky oken nemusí odpovídat nové verzi – zavřít všechna okna, i zbytky
+--- s prefixem bez záznamu ve storage, a stav oken vynulovat.
+function M.on_configuration_changed()
+  for _, player in pairs(game.players) do
+    local ours = {}
+    for _, child in ipairs(player.gui.screen.children) do
+      if child.valid and child.name and child.name:find("^pyntr_") then ours[#ours + 1] = child end
+    end
+    for _, child in ipairs(ours) do child.destroy() end
+  end
+  storage.gui = {}
+end
+
 --- Zbourání budovy: okna nad ní se zavřou.
 lifecycle.on_removed[#lifecycle.on_removed + 1] = function(unit)
   for _, player in ipairs(window.viewers(unit)) do window.close(player) end
