@@ -5,6 +5,7 @@ local lifecycle = require("scripts.lifecycle")
 local actions = require("scripts.actions")
 local window = require("scripts.gui.window")
 local editor = require("scripts.gui.editor")
+local help = require("scripts.gui.help")
 
 local M = {}
 
@@ -22,6 +23,22 @@ local CLICK = {
   goto_error = function(_, st)
     if st.error_line then editor.scroll_to(st.refs, st.error_line) end
   end,
+}
+
+--- Vložení příkladu z nápovědy do editoru (nahradí text; jen když jde psát).
+function CLICK.insert_example(_, st, ctl, element)
+  local ex = help.EXAMPLES[element.tags.example]
+  if not (ctl and ex and actions.view(ctl).can.edit) then return end
+  editor.set_text(st.refs, ex.code)
+  st.text = ex.code
+  actions.set_draft(ctl, ex.code)
+  window.refresh_unit(ctl.unit)
+end
+
+--- Kliknutí, která nepotřebují hlavní okno (nápověda): function(player).
+local PLAYER_CLICK = {
+  help = function(player) help.open(player) end,
+  help_close = function(player) help.close(player) end,
 }
 
 --- Akce, po kterých se obnoví všechna okna nad budovou (změnily stav kontroléru).
@@ -61,6 +78,13 @@ end
 
 --- Kliknutí na prvek s tagem pyntr_action.
 function M.on_gui_click(event)
+  local el = event.element
+  local simple = el and el.valid and el.tags and PLAYER_CLICK[el.tags.pyntr_action]
+  if simple then
+    local p = game.get_player(event.player_index)
+    if p then simple(p) end
+    return
+  end
   local player, st, ctl, element = context(event)
   if not player then return end
   local action = element.tags.pyntr_action

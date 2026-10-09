@@ -40,6 +40,7 @@
 | Barva pruhu ceny (podíl limitu watchdogu: žlutá / červená) | `COST_WARN`, `COST_HIGH` v `Pythonator/scripts/gui/status.lua` | 0,5 / 0,9 |
 | Obnova otevřeného okna (ticky) | `REFRESH_TICKS` v `Pythonator/scripts/gui/events.lua` | 10 |
 | Limity panelů: ikon signálů, délka repr, počet globálů, sloupce mřížky | `PANEL_MAX_ROWS`, `REPR_MAX`, `GLOBALS_MAX`, `SIGNAL_COLUMNS` v `Pythonator/scripts/gui/panels.lua` | 60 / 60 / 40 / 6 |
+| Rozměry okna nápovědy (šířka textu, výška karet) | `TEXT_WIDTH`, `HEIGHT` v `Pythonator/scripts/gui/help.lua` | 620 / 560 px |
 
 ## Známé odchylky od Pythonu
 - `int` a `float` se nerozlišují: `6 / 2` vypíše `3`, ne `3.0`; čísla nad 2^53 ztrácí přesnost.

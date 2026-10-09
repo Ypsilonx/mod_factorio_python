@@ -40,6 +40,8 @@ function M.build(left, side, refs)
                                style = "tool_button", tooltip = { "pyntr-gui.tooltip-" .. b[1] },
                                tags = { pyntr_action = b[1] } })
   end
+  refs.help = toolbar.add({ type = "sprite-button", name = "pyntr_btn_help", sprite = "utility/questionmark",
+                            style = "tool_button", tooltip = { "pyntr-gui.tooltip-help" }, tags = { pyntr_action = "help" } })
   refs.toolbar = toolbar
 
   local panel = side.add({ type = "frame", name = "pyntr_status", style = "inside_shallow_frame_with_padding",

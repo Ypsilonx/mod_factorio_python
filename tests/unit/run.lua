@@ -3,7 +3,7 @@
 package.path = "Pythonator/?.lua;tests/unit/?.lua;" .. package.path
 
 --- Seznam testovacích sad; každá vrací pole { "název", funkce }.
-local SUITES = { "test_locale", "test_errors", "test_signals", "test_lexer", "test_parser_expr", "test_parser_stmt", "test_runtime_core", "test_builtins", "test_signal_io", "test_vector", "test_elements", "test_checker", "test_compiler", "test_conformance", "test_locale_keys", "test_hardening", "test_recipe_research", "test_controller", "test_actions", "test_gui_window", "test_gui_status", "test_gui_panels", "test_gui_names", "test_io", "test_scheduler", "test_indicator", "test_sprites" }
+local SUITES = { "test_locale", "test_errors", "test_signals", "test_lexer", "test_parser_expr", "test_parser_stmt", "test_runtime_core", "test_builtins", "test_signal_io", "test_vector", "test_elements", "test_checker", "test_compiler", "test_conformance", "test_locale_keys", "test_hardening", "test_recipe_research", "test_controller", "test_actions", "test_gui_window", "test_gui_status", "test_gui_panels", "test_gui_help", "test_gui_names", "test_io", "test_scheduler", "test_indicator", "test_sprites" }
 
 local pass, fail = 0, 0
 for _, suite in ipairs(SUITES) do

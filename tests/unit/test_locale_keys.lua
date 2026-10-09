@@ -57,6 +57,12 @@ return {
     local cs = section_keys("Pythonator/locale/cs/locale.cfg", "pyntr-gui")
     local used = {}
     for _, k in ipairs(GUI_DYNAMIC) do used[k] = true end
+    -- klíče nápovědy skládané z id karet a příkladů
+    local help = require("scripts.gui.help")
+    for _, id in ipairs(help.SECTIONS) do used["help-" .. id .. "-title"], used["help-" .. id .. "-text"] = true, true end
+    for _, ex in ipairs(help.EXAMPLES) do
+      used["help-example-" .. ex.id .. "-title"], used["help-example-" .. ex.id .. "-desc"] = true, true
+    end
     for _, name in ipairs(GUI_FILES) do
       local f = io.open("Pythonator/scripts/gui/" .. name .. ".lua", "rb")
       if f then
