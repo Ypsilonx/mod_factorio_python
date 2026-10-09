@@ -15,6 +15,10 @@ local CLICK = {
   pause = function(_, _, ctl) actions.pause(ctl) end,
   reset = function(_, _, ctl) actions.reset(ctl) end,
   step = function(_, _, ctl) actions.step(ctl, game.tick) end,
+  toggle_log = function(player, st)
+    st.refs.log_pane.visible = not st.refs.log_pane.visible
+    window.refresh_live(player)
+  end,
   goto_error = function(_, st)
     if st.error_line then editor.scroll_to(st.refs, st.error_line) end
   end,
@@ -78,6 +82,26 @@ function M.on_gui_text_changed(event)
   window.refresh_status(player)
   for _, other in ipairs(window.viewers(ctl.unit)) do
     if other.index ~= player.index then window.refresh(other) end
+  end
+end
+
+--- Jak často se otevřená okna obnovují (ticky). Laditelné.
+M.REFRESH_TICKS = 10
+
+--- Periodická obnova otevřených oken (on_nth_tick). Bez otevřených oken hned skončí.
+function M.on_refresh()
+  local open = storage.gui
+  if not (open and next(open)) then return end
+  -- kopie seznamu: obnova může okno zavřít (zaniklá budova) a měnit tabulku během průchodu
+  local indices = {}
+  for index in pairs(open) do indices[#indices + 1] = index end
+  for _, index in ipairs(indices) do
+    local player = game.get_player(index)
+    if player then
+      window.refresh_live(player)
+    else
+      open[index] = nil
+    end
   end
 end
 

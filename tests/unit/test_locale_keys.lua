@@ -48,7 +48,8 @@ end
 --- Soubory GUI a klíče skládané za běhu (stav a tooltipy tlačítek), které literál v kódu nenajde.
 local GUI_FILES = { "window", "editor", "status", "events", "panels", "help" }
 local GUI_DYNAMIC = { "state-off", "state-running", "state-paused", "state-error", "state-no_power",
-  "tooltip-play", "tooltip-pause", "tooltip-reset", "tooltip-step" }
+  "tooltip-play", "tooltip-pause", "tooltip-reset", "tooltip-step",
+  "element-latch", "element-timer", "element-edge", "element-counter", "element-delay", "element-pid" }
 
 return {
   { "každý klíč [pyntr-gui] z kódu GUI má en i cs překlad", function()

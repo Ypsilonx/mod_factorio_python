@@ -5,6 +5,7 @@ local controller = require("scripts.controller")
 local actions = require("scripts.actions")
 local editor = require("scripts.gui.editor")
 local status = require("scripts.gui.status")
+local panels = require("scripts.gui.panels")
 
 local M = {}
 
@@ -68,6 +69,7 @@ function M.open(player, ctl)
   refs.left = left
   refs.side = body.add({ type = "flow", name = "pyntr_side", direction = "vertical" })
   status.build(left, refs.side, refs)
+  panels.build(left, refs.side, refs)
   all()[player.index] = { unit = ctl.unit, refs = refs, text = nil }
   frame.force_auto_center()
   M.refresh(player)
@@ -88,8 +90,25 @@ function M.refresh(player)
   local text = view.can.edit and actions.text(ctl) or ctl.code
   st.refs.code.read_only = not view.can.edit
   editor.set_text(st.refs, text)
-  st.text = text
+  st.text, st.edit = text, view.can.edit
   status.update(st.refs, view, st)
+  panels.refresh(st.refs, ctl)
+end
+
+--- Periodická obnova otevřeného okna: stav a panely; text editoru jen když se změnilo, jestli jde psát
+--- (chyba nebo výpadek změní stav bez akce hráče).
+--- @param player LuaPlayer
+function M.refresh_live(player)
+  local st = all()[player.index]
+  local ctl = st and controller.get(st.unit)
+  if not (ctl and st.refs.frame.valid) then
+    M.close(player)
+    return
+  end
+  local view = actions.view(ctl)
+  if view.can.edit ~= st.edit then return M.refresh(player) end
+  status.update(st.refs, view, st)
+  panels.refresh(st.refs, ctl)
 end
 
 --- Obnoví jen tlačítka a stav (ne text editoru – hráč právě píše).

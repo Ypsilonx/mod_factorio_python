@@ -12,6 +12,7 @@ local GUI_FILES = {
   "Pythonator/scripts/gui/window.lua",
   "Pythonator/scripts/gui/editor.lua",
   "Pythonator/scripts/gui/status.lua",
+  "Pythonator/scripts/gui/panels.lua",
 }
 
 --- Celý soubor jako text (nebo nil).

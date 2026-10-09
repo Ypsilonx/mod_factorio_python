@@ -38,6 +38,8 @@
 | Barvy čísel řádků (běžné / chyba) | `COLOR_LINE`, `COLOR_ERROR` v `Pythonator/scripts/gui/editor.lua` | šedá / červená |
 | Font editoru | `pyntr-mono` v `Pythonator/prototypes/gui.lua` (`from = "default-mono"`, velikost) | 14 |
 | Barva pruhu ceny (podíl limitu watchdogu: žlutá / červená) | `COST_WARN`, `COST_HIGH` v `Pythonator/scripts/gui/status.lua` | 0,5 / 0,9 |
+| Obnova otevřeného okna (ticky) | `REFRESH_TICKS` v `Pythonator/scripts/gui/events.lua` | 10 |
+| Limity panelů: ikon signálů, délka repr, počet globálů, sloupce mřížky | `PANEL_MAX_ROWS`, `REPR_MAX`, `GLOBALS_MAX`, `SIGNAL_COLUMNS` v `Pythonator/scripts/gui/panels.lua` | 60 / 60 / 40 / 6 |
 
 ## Známé odchylky od Pythonu
 - `int` a `float` se nerozlišují: `6 / 2` vypíše `3`, ne `3.0`; čísla nad 2^53 ztrácí přesnost.
@@ -136,7 +138,7 @@ Skripty jsou zdroj pravdy, výstupy (PNG, `prototypes/graphics_data.lua`) se ru�
 - [ ] Ikona v inventáři, ve stromu výzkumu a thumbnail v seznamu modů.
 
 ## Známá omezení a odložené drobnosti (review plánu 2)
-- Chyba uprostřed `loop()`: výstupy zapsané před chybou zůstanou v `ctl.out`, ale na drát se nepošlou – drát drží stav z posledního úspěšného běhu (GUI v plánu 3 má ukazovat stav drátu).
+- Chyba uprostřed `loop()`: výstupy zapsané před chybou zůstanou v `ctl.out`, ale na drát se nepošlou – drát drží stav z posledního úspěšného běhu; panel Výstupy v okně ukazuje právě stav drátu (`ctl.wires`).
 - Undo zbourání (Ctrl+Z) vrátí budovu bez kódu – duch z undo nenese tagy (řešitelné přes undo-redo API 2.0).
 - Po načtení hry se každý program překládá zvlášť a všechny v prvním ticku (při stovkách budov krátké zaškobrtnutí).
 - `set_slot` skrytého výstupu vyvolá `on_entity_logistic_slot_changed` – mody, které ji poslouchají, platí za každou změnu výstupu.

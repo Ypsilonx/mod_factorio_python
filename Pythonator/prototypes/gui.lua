@@ -35,3 +35,27 @@ styles.pyntr_line_number = {
   bottom_padding = 0,
   right_padding = 6,
 }
+
+--- Posuvník panelů v bočním sloupci (výška jako editor).
+styles.pyntr_panels_scroll = {
+  type = "scroll_pane_style",
+  parent = "naked_scroll_pane",
+  maximal_height = editor.VIEW_HEIGHT,
+  minimal_width = 270,
+}
+
+--- Rozbalovací log print() pod editorem.
+styles.pyntr_log_scroll = {
+  type = "scroll_pane_style",
+  parent = "deep_scroll_pane",
+  maximal_height = 160,
+  horizontally_stretchable = "on",
+  padding = 4,
+}
+
+--- Řádek logu: neproporcionální font jako editor.
+styles.pyntr_log_line = {
+  type = "label_style",
+  parent = "label",
+  font = "pyntr-mono",
+}
