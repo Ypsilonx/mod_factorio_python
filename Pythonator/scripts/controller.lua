@@ -39,6 +39,13 @@ local function setting(name)
   return value
 end
 
+--- Limit z nastavení mapy (pro zobrazení ceny v GUI).
+--- @param name string jméno map setting
+--- @return number
+function M.limit(name)
+  return setting(name)
+end
+
 --- Zapomene uložené limity z nastavení mapy (on_runtime_mod_setting_changed).
 function M.refresh_settings()
   limits = {}
