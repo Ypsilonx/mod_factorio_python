@@ -1,0 +1,6 @@
+# Shell skripty musí mít LF i po checkoutu na Windows (autocrlf)
+*.sh text eol=lf
+
+# Konformní výstupy generuje CPython na Windows (CRLF) – drž LF
+*.out text eol=lf
+*.py text eol=lf

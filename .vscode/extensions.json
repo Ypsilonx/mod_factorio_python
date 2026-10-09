@@ -1,0 +1,13 @@
+{
+  "recommendations": [
+    "sumneko.lua",
+    "justarandomgeek.factoriomod-debug"
+  ],
+  "unwantedRecommendations": [
+    "gccfeli.vscode-lua",
+    "trixnz.vscode-lua",
+    "keyring.lua",
+    "changnet.lua-tags",
+    "actboy168.lua-debug"
+  ]
+}
