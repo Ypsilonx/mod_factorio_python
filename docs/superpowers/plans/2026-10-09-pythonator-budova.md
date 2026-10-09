@@ -133,7 +133,7 @@ a po obnově proudu `dt` zahrne celou pauzu.
 **Soubory:** `Pythonator/scripts/{lifecycle.lua,blueprint.lua,remote.lua}`, `Pythonator/control.lua`.
 
 **Rozhraní (remote `pyntr`):** `set_code(unit, src) → ok, err`, `get_state(unit) → {running, error, tick,
-globals (repr), outputs, prints, used}`, `start(unit)`, `stop(unit)`, `step(unit)`.
+globals (repr), outputs, prints, used}`, `start(unit)`, `stop(unit)`, `reset(unit)`, `step(unit)`.
 
 **Co:** stavba a odstranění všemi cestami. Vytvoří se dva skryté výstupy připojené drátem s
 `wire_origin.script` a při zbourání se uklidí. Blueprint tag `pyntr_code` a `pyntr_running` přenáší kód, ne
