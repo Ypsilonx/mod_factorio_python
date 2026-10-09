@@ -35,7 +35,14 @@ function M.entity(unit)
   function e.get_signal(sid, a, b)
     return (wire(a)[sid.name] or 0) + (b and wire(b)[sid.name] or 0)
   end
+  --- Id sítí konektorů (výchozí: síť podle entity a drátu, jen když na drátu něco je).
+  e.net_ids, e.reads = {}, 0
+  function e.get_circuit_network(id)
+    local nid = e.net_ids[id] or (next(wire(id)) and e.unit_number * 10 + id)
+    return nid and { network_id = nid } or nil
+  end
   function e.get_signals(a, b)
+    e.reads = e.reads + 1
     local sum = {}
     for _, id in ipairs({ a, b }) do
       for name, v in pairs(wire(id)) do sum[name] = (sum[name] or 0) + v end

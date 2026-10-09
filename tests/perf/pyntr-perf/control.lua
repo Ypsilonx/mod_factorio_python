@@ -1,6 +1,7 @@
 -- Výkonový scénář: N budov napojených na společný zdroj 20 signálů. Režimy (mode.lua, count.lua generuje
 -- tools/run-perf.sh): idle = jen zdroj a proud, pass = Pythonator s prázdným loop(), hyst = Pythonator
 -- s hysterezí nad 20 signály, items = jen průchod inp.items(), get20 = 20× čtení signálu po jednom,
+-- hyst-own = hystereze, ale každá budova má vlastní zdroj (síť se nesdílí),
 -- decider = vanilla rozhodovací kombinátor nad stejnými signály.
 local MODE = require("mode")
 local N = require("count")
@@ -28,6 +29,7 @@ for i = 1, SIGNALS do GET20[#GET20 + 1] = "    x" .. i .. " = inp['signal-" .. s
 local PROGRAMS = {
   pass = "def loop():\n    pass",
   hyst = HYST,
+  ["hyst-own"] = HYST,
   items = "def loop():\n    for k, v in inp.items():\n        pass",
   get20 = table.concat(GET20, "\n"),
 }
@@ -48,12 +50,17 @@ script.on_init(function()
   surface.generate_with_lab_tiles = true
   surface.request_to_generate_chunks({ 0, 0 }, 10)
   surface.force_generate_chunk_requests()
-  local source = place(surface, { name = "constant-combinator", position = { -80.5, -70.5 } })
-  local section = source.get_or_create_control_behavior().add_section()
-  for i = 1, SIGNALS do
-    section.set_slot(i, { value = { type = "virtual", name = "signal-" .. string.char(64 + i), quality = "normal",
-                                    comparator = "=" }, min = i * 5 })
+  --- Konstantní kombinátor s 20 signály.
+  local function make_source(position)
+    local src = place(surface, { name = "constant-combinator", position = position })
+    local section = src.get_or_create_control_behavior().add_section()
+    for i = 1, SIGNALS do
+      section.set_slot(i, { value = { type = "virtual", name = "signal-" .. string.char(64 + i), quality = "normal",
+                                      comparator = "=" }, min = i * 5 })
+    end
+    return src
   end
+  local source = make_source({ -80.5, -70.5 })
   local power = place(surface, { name = "electric-energy-interface", position = { -78, -70 } })
   power.power_production = 1e9
   power.electric_buffer_size = 1e10
@@ -76,7 +83,11 @@ script.on_init(function()
         outputs = { { signal = { type = "virtual", name = "signal-each" }, copy_count_from_input = false } },
       }
     end
-    if e then
+    if e and MODE == "hyst-own" then
+      -- Každá budova má vlastní zdroj: sítě se nesdílí.
+      local own = make_source({ x + 2.5, y + 2.5 })
+      own.get_wire_connector(W.circuit_red, true).connect_to(e.get_wire_connector(W.combinator_input_red, true), false)
+    elseif e then
       -- Vstupy v řetězu: všechny budovy vidí stejnou síť se zdrojem.
       previous.get_wire_connector(previous_id, true).connect_to(e.get_wire_connector(W.combinator_input_red, true), false)
       previous, previous_id = e, W.combinator_input_red

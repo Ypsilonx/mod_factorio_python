@@ -9,24 +9,28 @@ M.ReaderMT, M.WriterMT = ReaderMT, WriterMT
 
 --- Kanonický klíč z hodnoty klíče, jinak chyba resolveru.
 local function canon(obj, key)
+  -- Klíče se v programu opakují každý tick: převedený tvar si objekt pamatuje (jen řetězce).
+  local c = obj.ccache[key]
+  if c then return c end
   if type(key) ~= "string" then R.raise("bad-signal-key", R.typename(key)) end
-  local _, c, err = obj.resolver:resolve(key)
-  if not c then error(err, 0) end
-  return c
+  local _, canonical, err = obj.resolver:resolve(key)
+  if not canonical then error(err, 0) end
+  obj.ccache[key] = canonical
+  return canonical
 end
 
 --- Vytvoří čtecí objekt.
 --- @param source table {get = function(canonical) → number, all = function() → { {klíč, hodnota}… }}
 --- @param resolver table z signals.new_resolver
 function M.reader(source, resolver)
-  return setmetatable({ source = source, resolver = resolver }, ReaderMT)
+  return setmetatable({ source = source, resolver = resolver, ccache = {} }, ReaderMT)
 end
 
 --- Vytvoří zapisovací objekt nad úložištěm kanonický klíč → int32.
 --- @param store table úložiště (tatáž tabulka zůstává, clear ji jen vyprázdní)
 --- @param resolver table z signals.new_resolver
 function M.writer(store, resolver)
-  return setmetatable({ store = store, resolver = resolver }, WriterMT)
+  return setmetatable({ store = store, resolver = resolver, ccache = {} }, WriterMT)
 end
 
 --- Dvojice (klíč, hodnota) všech nenulových signálů objektu.
@@ -86,6 +90,9 @@ for _, mt in ipairs({ ReaderMT, WriterMT }) do
   end
 end
 ReaderMT.__methods = common
+-- Rychlý průchod `for k, v in inp.items()` (R.items_array) bez stavby seznamu n-tic.
+ReaderMT.__pairs_py = pairs_of
+WriterMT.__pairs_py = pairs_of
 WriterMT.__methods = writer_methods
 
 ReaderMT.__setitem = function() R.raise("readonly-signal", "inp") end
@@ -96,7 +103,8 @@ WriterMT.__setitem = function(obj, key, value)
   if not x then R.raise("type-error", "=", "signal", R.typename(value)) end
   -- NaN a nekonečno nemají celočíselnou hodnotu (Python: OverflowError), na drát nesmí
   if x ~= x or x == math.huge or x == -math.huge then R.raise("overflow", R.str(x)) end
-  x = R.wrap32(x >= 0 and math.floor(x) or math.ceil(x))
+  x = x >= 0 and math.floor(x) or math.ceil(x)
+  if x > 2147483647 or x < -2147483648 then x = R.wrap32(x) end
   if x == 0 then x = nil end
   -- `changed` čte hostitel: výstupy zapisuje na drát jen po skutečné změně (program často každý tick
   -- zapíše tytéž hodnoty).

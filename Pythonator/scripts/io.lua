@@ -116,14 +116,20 @@ function M.input_wires()
   }
 end
 
+--- Sdílené čtení sítí v rámci jednoho ticku: id červené sítě → id zelené → převedené pole signálů.
+--- Hodnoty na síti se během ticku nemění (engine je přepočte až na jeho konci), takže budovy na téže síti
+--- mohou výsledek sdílet – get_signals je nejdražší část čtení. Stav je odvozený a v každém ticku nový
+--- (deterministické, do storage nepatří).
+local shared_tick, shared = nil, {}
+
 --- Zdroj signálů pro signal_io.reader nad konektory entity. Celý seznam (`all`) se načte nejvýš jednou
---- za běh loop(); `reset()` volá kontrolér před každým během.
+--- za běh loop() a budovy na téže síti ho v jednom ticku sdílí; `reset(tick)` volá kontrolér před každým během.
 --- @param entity LuaEntity
 --- @param wires table { id, id2 | nil }
 --- @param res table resolver signálů
---- @return table { get(canonical) → int, all() → { {klíč, hodnota}… }, reset() }
+--- @return table { get(canonical) → int, all() → { {klíč, hodnota}… } (neměnit – sdílené), reset(tick) }
 function M.reader_source(entity, wires, res)
-  local cached
+  local cached, tick
   -- Klíče z minula v pořadí hry a jejich seřazené pořadí: hra vrací signály každý tick ve stejném
   -- pořadí, řadit (porovnání po bajtech v Lua je drahé) je potřeba jen při změně sady signálů.
   local last_keys, last_order
@@ -136,7 +142,32 @@ function M.reader_source(entity, wires, res)
 
   function source.all()
     if cached then return cached end
-    local signals = entity.get_signals(wires[1], wires[2]) or {}
+    local w1, w2 = wires[1], wires[2]
+    local net1 = entity.get_circuit_network(w1)
+    local net2 = w2 and entity.get_circuit_network(w2)
+    local id1, id2 = net1 and net1.network_id or 0, net2 and net2.network_id or 0
+    if id1 == 0 and id2 == 0 then
+      cached = {}
+      return cached
+    end
+    local slot
+    if tick then
+      if shared_tick ~= tick then shared_tick, shared = tick, {} end
+      slot = shared[id1]
+      if not slot then
+        slot = {}
+        shared[id1] = slot
+      end
+      if slot[id2] then
+        cached = slot[id2]
+        return cached
+      end
+    end
+    local signals
+    if id1 ~= 0 and id2 ~= 0 then signals = entity.get_signals(w1, w2)
+    elseif id1 ~= 0 then signals = entity.get_signals(w1)
+    else signals = entity.get_signals(w2) end
+    signals = signals or {}
     local n = #signals
     local keys = {}
     local same = last_keys ~= nil and #last_keys == n
@@ -156,10 +187,12 @@ function M.reader_source(entity, wires, res)
       local i = last_order[j]
       cached[j] = { keys[i], signals[i].count }
     end
+    if slot then slot[id2] = cached end
     return cached
   end
 
-  function source.reset() cached = nil end
+  --- Nový běh loop() v herním ticku `t` (nil = bez sdílení mezi budovami).
+  function source.reset(t) cached, tick = nil, t end
 
   return source
 end

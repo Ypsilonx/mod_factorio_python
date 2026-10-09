@@ -75,17 +75,23 @@ Pythonator běží, jen když má v zásobníku energii aspoň na jeden tick (`e
 | Bob's (`bobrevamp` + 16 modů) | ✓ | vanilla suroviny; chemical-science-pack, circuit-network |
 | AAI Industry | ✓ | vanilla suroviny; chemical-science-pack, circuit-network |
 
-## Výkon (`bash tools/run-perf.sh`, 500 budov na společném zdroji 20 signálů, 3600 ticků, Factorio 2.0.77)
+## Výkon (`bash tools/run-perf.sh`, 500 budov, zdroj 20 signálů, 3600 ticků, Factorio 2.0.77)
 | Režim | ms/tick | µs na budovu |
 |---|---|---|
 | idle (jen zdroj a proud) | 0,14 | – |
 | decider (vanilla rozhodovací kombinátor) | 0,14 | ~0 |
-| pass (prázdný `loop()`) | 1,70 | 3,1 |
-| get20 (20× `inp['signal-X']`) | 15,0 | 30 |
-| items (průchod `inp.items()` přes 20 signálů) | 27,8 | 55 |
-| hyst (hystereze nad 20 signály) | 50,5 | 101 |
+| pass (prázdný `loop()`) | 1,65 | 3,3 |
+| items (průchod `inp.items()`, 20 signálů, sdílená síť) | 3,66 | 7 |
+| get20 (20× `inp['signal-X']`) | 12,2 | 24 |
+| hyst (hystereze nad 20 signály, sdílená síť) | 14,8 | 30 |
+| hyst-own (hystereze, každá budova vlastní síť) | 29,7 | 59 |
 
-Čtení signálů z enginu je hlavní cena: `get_signals` se 20 signály stojí ~35 µs, `get_signal` ~1,5 µs za signál.
-Optimalizace provedené po prvním měření (hyst 108 → 50,5 ms, pass 4,29 → 1,70 ms): řazení klíčů vstupů jen při
-změně sady signálů, cache kanonických klíčů, zápis výstupů jen po změně, limity z nastavení a spotřeba energie
-v paměti místo volání API každý tick.
+Hlavní cena je čtení signálů z enginu (`get_signals` s 20 signály ~25 µs, `get_signal` ~1,2 µs za signál).
+Budovy na téže síti čtou v jednom ticku jen jednou (sdílená cache podle `network_id` v `scripts/io.lua`).
+Vývoj: první měření hyst 108 ms → 50,5 (řazení klíčů jen při změně, zápis výstupů jen po změně, cache
+nastavení a energie) → 31,2 (rychlé cesty překladače: `for … in x.items()/keys()/values()` bez seznamu,
+`a if c else b` s literálem bez closure, `d.get`/`l.append` bez dispatch, číselné operace bez převodů)
+→ 14,8 / 29,7 (sdílené čtení sítě).
+
+Lokální rychlé měření jazyka bez hry: `lua tools/bench-lang.lua` (µs na loop() pro sadu programů,
+napodobené API – čísla jen pro porovnání změn).

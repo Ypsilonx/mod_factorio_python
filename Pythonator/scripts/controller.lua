@@ -225,7 +225,7 @@ function M.run_loop(ctl, game_tick, lost)
   ctl.last_run = game_tick
   local IO = entry.IO
   IO.tick, IO.game_tick, IO.dt = ctl.tick, game_tick, dt
-  for _, source in pairs(entry.sources) do source.reset() end
+  for _, source in pairs(entry.sources) do source.reset(game_tick) end
   local cleared = ctl.outputs_mode == "clear" and clear_outputs(ctl)
   if not run(ctl, entry, "loop") then return false end
   flush(ctl, entry, cleared)

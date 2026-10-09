@@ -11,7 +11,39 @@ local function setup()
   return io, ctl
 end
 
+--- Zdroj vstupu inp (oba dráty) nad falešnou entitou.
+local function inp_source(io, entity)
+  local wires = io.input_wires().inp
+  return io.reader_source(entity, wires, require("scripts.resolver").get())
+end
+
 return {
+  { "budovy na stejné síti čtou v jednom ticku z enginu jen jednou", function()
+    local io = setup()
+    local a, b = G.entity(1), G.entity(2)
+    a.red["signal-A"], b.red["signal-A"] = 5, 5
+    a.net_ids[1], b.net_ids[1] = 77, 77
+    local sa, sb = inp_source(io, a), inp_source(io, b)
+    sa.reset(10); sb.reset(10)
+    A.eq(sa.all()[1][2], 5, "první budova")
+    A.eq(sb.all()[1][2], 5, "druhá budova")
+    A.eq(a.reads + b.reads, 1, "jedno čtení za tick")
+    sa.reset(11); sb.reset(11)
+    b.red["signal-A"], a.red["signal-A"] = 6, 6
+    A.eq(sb.all()[1][2], 6, "nový tick = nové čtení")
+    A.eq(a.reads + b.reads, 2, "druhý tick")
+  end },
+  { "různé sítě se čtou zvlášť, budova bez sítě nečte nic", function()
+    local io = setup()
+    local a, b, c = G.entity(1), G.entity(2), G.entity(3)
+    a.red["signal-A"], b.red["signal-A"] = 1, 2
+    local sa, sb, sc = inp_source(io, a), inp_source(io, b), inp_source(io, c)
+    sa.reset(5); sb.reset(5); sc.reset(5)
+    A.eq(sa.all()[1][2], 1, "a")
+    A.eq(sb.all()[1][2], 2, "b")
+    A.eq(#sc.all(), 0, "bez sítě prázdné")
+    A.eq(c.reads, 0, "bez sítě se engine nevolá")
+  end },
   { "výstup = out + out_red / out_green, s přetečením int32", function()
     local io, ctl = setup()
     ctl.out.both["signal-A"], ctl.out.red["signal-A"], ctl.out.green["iron-plate@rare"] = 2, 3, 4
