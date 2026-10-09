@@ -57,9 +57,10 @@ ticku – složitější program tick neprodlouží „přes hranu“, jen stoj�
 
 | Událost | Chování |
 |---|---|
-| Stop / Start (tlačítko) | `loop()` se přestane / začne volat, stav zůstává |
-| Výpadek proudu | jako Stop; `tick` stojí; výstupy zůstanou |
-| Nahrání nového kódu | překlad; při úspěchu inicializace od nuly (globály z nového kódu), výstupy vymazány; při chybě překladu běží dál starý program a zobrazí se chyba |
+| ⏸ Pauza / ▶ Play (tlačítko) | `loop()` se přestane / začne volat, stav zůstává; po chybě Play nejde (nutný Reset nebo nový kód) |
+| ⟳ Reset (tlačítko) | vynuluje globály, `tick`, výstupy, log i chybu a znovu spustí inicializaci **uloženého** kódu; běžící program běží dál od nuly, pozastavený nebo po chybě zůstane pozastavený |
+| Výpadek proudu | jako Pauza; `tick` stojí; výstupy zůstanou |
+| Nahrání nového kódu (▶ Play se změněným textem) | překlad; při úspěchu inicializace od nuly (globály z nového kódu), výstupy vymazány; při chybě překladu běží dál starý program a zobrazí se chyba |
 | Chyba (překlad, běh, watchdog, paměť) | stav CHYBA, `loop()` se nevolá, výstupy zůstanou, zobrazí se řádek a zpráva |
 | Zbourání | stav zmizí |
 | Copy-paste / blueprint | přenáší se kód (a běží/stojí), ne stav; nová budova začne inicializací |
@@ -136,6 +137,21 @@ zdokumentovaná odchylka; sledování typu čísla by zpomalilo každou operaci.
 
 Chyby běhu (`TypeError`, `IndexError`, dělení nulou …) zastaví kontrolér ve stavu CHYBA s řádkem zdrojového kódu.
 `print()` zapisuje do ladicího logu budovy (posledních 50 řádků, zobrazeno v GUI; log se neukládá do globálů).
+
+### Knihovna kombinátorů (plán 3)
+
+Rychlý zápis toho, co umí vanilla kombinátory, a hotové stavové prvky – kratší psaní i rychlejší běh
+(operace nad celou sadou signálů proběhne jedním voláním runtime nad polem, ne interpretovanou smyčkou).
+
+| Skupina | Funkce (návrh, upřesní plán 3) |
+|---|---|
+| Vektorové nad objekty signálů | `inp.each(op, x)` (jako Each v aritmetickém kombinátoru), `inp.where(op, x)` (filtr jako Each v rozhodovacím), `count`, `sum`, `max_key`, `min_key`; výsledek jde rovnou do `out.set(…)` |
+| Stavové prvky (stav pod jménem v globálech programu, přežije save) | `latch(jméno, set, reset)`, `timer(jméno, perioda)`, `edge(jméno, hodnota)` (náběžná/sestupná hrana), `counter`, `delay(jméno, hodnota, n)` (zpoždění o N ticků), `pid` |
+
+- **Implementace v Lua nad polem signálů** (rozhodnutí 2026-10-09) – zachová časovou garanci T → T+1.
+- Varianta „koprocesor“ ze skrytých vanilla kombinátorů (vzor fCPU – prakticky nulová cena UPS, ale zpoždění
+  a víc ticků na operaci) je **mimo v0.1**; případně později jako volitelný režim se stejnou syntaxí.
+- Odchylka od Pythonu: tyto funkce CPython nemá – konformní harness je musí napodobit.
 
 ## Překladač a běh
 
@@ -216,13 +232,15 @@ Vlastní okno místo vanilla okna kombinátoru (`on_gui_opened`):
 │ └───────────────────────────────────────────┘ ├─ výstupy ─┤│
 │ [vložit signál]                               └───────────┘│
 │ ⚠ chyba: řádek, zpráva          print log (rozbalovací)    │
-│ [▶ Nahrát a spustit] [⏸ Stop] [⏭ Krok 1 tick] [? Nápověda] │
+│ [▶ Play] [⏸ Pauza] [⟳ Reset] [⏭ Krok] [? Nápověda]         │
 └────────────────────────────────────────────────────────────┘
 ```
-- „Krok 1 tick“ funguje jen ve stavu Stop: provede jeden `loop()` a obnoví zobrazení.
+- Za běhu je editor jen pro čtení – upravuje se při pauze. ▶ Play se změněným textem kód přeloží a spustí
+  od nuly (při chybě překladu zůstane pauza a ukáže se chyba), s nezměněným textem pokračuje.
+- „Krok“ funguje jen při pauze: provede jeden `loop()` a obnoví zobrazení.
 - „Cena“ = počet operací posledního `loop()` (z watchdogu) vůči limitu.
 - Panely stavu se obnovují jen při otevřeném okně (`on_nth_tick`, interval jako konstanta).
-- Úpravy textu se neprojeví, dokud hráč nestiskne „Nahrát a spustit“.
+- Úpravy textu se neprojeví, dokud hráč nestiskne ▶ Play.
 
 ## Nastavení (map settings)
 

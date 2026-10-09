@@ -89,7 +89,7 @@ Resolver.__index = Resolver
 function M.new_resolver(protos)
   local p = {}
   for _, t in ipairs(M.ALL_TYPES) do p[t] = protos[t] or {} end
-  return setmetatable({ protos = p, cache = {} }, Resolver)
+  return setmetatable({ protos = p, cache = {}, canon = {} }, Resolver)
 end
 
 --- Typy bez prefixu, ve kterých jméno existuje.
@@ -103,12 +103,27 @@ function Resolver:plain_types(name)
 end
 
 --- Kanonický textový klíč: prefix jen u typů mimo item/fluid/virtual nebo při nejednoznačnosti.
---- @param sid table {type, name, quality}
+--- @param sid table {type, name, quality} – chybějící typ = item, chybějící kvalita = normal (jako SignalID hry)
 --- @return string
 function Resolver:canonical(sid)
-  local key = sid.name
-  if not IS_PLAIN[sid.type] or #self:plain_types(sid.name) > 1 then key = sid.type .. ":" .. key end
-  if sid.quality and sid.quality ~= "normal" then key = key .. "@" .. sid.quality end
+  local stype, name, quality = sid.type or "item", sid.name, sid.quality or "normal"
+  -- Cache typ → kvalita → jméno: čtení vstupů převádí každý signál každý tick, prototypy se nemění.
+  local by_quality = self.canon[stype]
+  if not by_quality then
+    by_quality = {}
+    self.canon[stype] = by_quality
+  end
+  local by_name = by_quality[quality]
+  if not by_name then
+    by_name = {}
+    by_quality[quality] = by_name
+  end
+  local key = by_name[name]
+  if key then return key end
+  key = name
+  if not IS_PLAIN[stype] or #self:plain_types(name) > 1 then key = stype .. ":" .. key end
+  if quality ~= "normal" then key = key .. "@" .. quality end
+  by_name[name] = key
   return key
 end
 

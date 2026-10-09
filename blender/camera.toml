@@ -1,0 +1,19 @@
+# Kamera a světla pro render spritů Pythonatoru (projekce jako ve Factoriu: ortografická kamera pod 45°).
+# 1 dlaždice = 1 m v Blenderu; sprite 64 px na dlaždici (ve hře scale = 0.5).
+
+[camera]
+elevation_deg = 45.0      # sklon kamery (Factorio 45°)
+distance = 14.0           # vzdálenost kamery od středu (ortografická – ovlivní jen ořez)
+frame_tiles = 3.5         # šířka snímku v dlaždicích (budova 2×2 + LCD nahoře + místo pro stín)
+px_per_tile = 64          # rozlišení spritu (HR)
+
+[sun]
+energy = 7.0
+angle_deg = 4.0
+rotation_deg = [-12.0, -48.0, 0.0]   # slunce zleva shora, stín doprava dolů jako ve hře
+color = [1.0, 0.95, 0.86]
+
+[fill]
+energy = 0.8
+rotation_deg = [50.0, 30.0, 0.0]
+color = [0.8, 0.88, 1.0]

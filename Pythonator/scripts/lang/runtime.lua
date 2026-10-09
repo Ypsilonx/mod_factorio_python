@@ -13,6 +13,9 @@ R.NoneMT, R.ListMT, R.TupleMT, R.DictMT = NoneMT, ListMT, TupleMT, DictMT
 
 R.None = setmetatable({}, NoneMT)
 
+--- Lua `type` pro vygenerovaný kód (běží v prázdném prostředí bez globálů).
+R.lua_type = type
+
 --- Vyhodí chybu jazyka bez pozice (řádek doplní VM).
 local function raise(key, ...) errors.raise(nil, nil, key, ...) end
 R.raise = raise
@@ -170,6 +173,7 @@ function R.sub(a, b)
 end
 
 function R.mul(a, b)
+  if type(a) == "number" and type(b) == "number" then return a * b end
   local x, y = numv(a), numv(b)
   if x and y then return x * y end
   local seq, count = a, y
@@ -187,18 +191,21 @@ function R.mul(a, b)
 end
 
 function R.truediv(a, b)
+  if type(a) == "number" and type(b) == "number" and b ~= 0 then return a / b end
   local x, y = nums("/", a, b)
   if y == 0 then raise("zero-division") end
   return x / y
 end
 
 function R.floordiv(a, b)
+  if type(a) == "number" and type(b) == "number" and b ~= 0 then return math.floor(a / b) end
   local x, y = nums("//", a, b)
   if y == 0 then raise("zero-division") end
   return math.floor(x / y)
 end
 
 function R.mod(a, b)
+  if type(a) == "number" and type(b) == "number" and b ~= 0 then return a - math.floor(a / b) * b end
   local x, y = nums("%", a, b)
   if y == 0 then raise("zero-division") end
   return x - math.floor(x / y) * y
@@ -264,8 +271,12 @@ end
 
 --- Rovnost s Python sémantikou (Lua boolean).
 function R.eq(a, b)
+  if a == b then
+    if a == nil then raise("unbound") end
+    return true
+  end
   if a == nil or b == nil then raise("unbound") end
-  if a == b then return true end
+  if type(a) == "number" and type(b) == "number" then return false end
   local x, y = numv(a), numv(b)
   if x and y then return x == y end
   if type(a) ~= "table" or type(b) ~= "table" then return false end
@@ -495,6 +506,60 @@ function R.iter(v)
   end
   if mt and mt.__iter then return mt.__iter(v) end
   raise("not-iterable", R.typename(v))
+end
+
+--- Rychlá cesta `obj.get(k[, default])` (n = počet argumentů, zná ho překladač): slovník přímo,
+--- ostatní (objekty signálů) obecně přes R.method.
+function R.mget(o, n, k, default)
+  if getmetatable(o) == DictMT then
+    local v = o.vals[dkey(k)]
+    if v ~= nil then return v end
+    if n == 2 then return default end
+    return R.None
+  end
+  if n == 1 then return R.method(o, "get", k) end
+  return R.method(o, "get", k, default)
+end
+
+--- Rychlá cesta `obj.append(x)`: seznam přímo, ostatní obecně přes R.method (chyba metody).
+function R.mappend(o, x)
+  if getmetatable(o) == ListMT then
+    o.n = o.n + 1
+    o[o.n] = x
+    return R.None
+  end
+  return R.method(o, "append", x)
+end
+
+--- Pole pro rychlý průchod `for … in obj.items()/keys()/values()` bez stavby seznamu a n-tic.
+--- items → prvky {klíč, hodnota} (indexy 1 a 2 jako u n-tice), keys/values → přímo hodnoty.
+--- Slovník: snímek v okamžiku začátku cyklu (jako R.iter); objekty signálů přes __pairs_py (pole se
+--- nesmí měnit – u vstupů je to sdílená cache ticku); jiné objekty obecně přes metodu.
+--- @return table pole, integer počet
+function R.items_array(obj, kind)
+  local mt = getmetatable(obj)
+  if mt == DictMT then
+    local keys, vals, n = obj.keys, obj.vals, #obj.keys
+    charge(n)
+    local arr = {}
+    for i = 1, n do
+      local k = keys[i]
+      if kind == "keys" then arr[i] = k
+      elseif kind == "values" then arr[i] = vals[dkey(k)]
+      else arr[i] = { k, vals[dkey(k)] } end
+    end
+    return arr, n
+  end
+  if mt and mt.__pairs_py then
+    local pairs_ = mt.__pairs_py(obj)
+    local n = #pairs_
+    if kind == "items" then return pairs_, n end
+    local arr, idx = {}, kind == "keys" and 1 or 2
+    for i = 1, n do arr[i] = pairs_[i][idx] end
+    return arr, n
+  end
+  local l = R.method(obj, kind)
+  return l, l.n
 end
 
 --- Rozbalí hodnotu na přesně n hodnot.

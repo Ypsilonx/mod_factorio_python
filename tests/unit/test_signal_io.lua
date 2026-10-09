@@ -61,4 +61,23 @@ return {
     R.method(out, "clear")
     A.eq(next(store), nil, "clear vyprázdní úložiště (stejná tabulka)")
   end },
+  { "zapisovací objekt hlásí změnu jen při skutečné změně hodnoty", function()
+    local store = {}
+    local out = signal_io.writer(store, signals.new_resolver(fake()))
+    A.eq(out.changed, nil, "na začátku beze změny")
+    R.setitem(out, "signal-A", 5)
+    A.eq(out.changed, true, "nová hodnota")
+    out.changed = nil
+    R.setitem(out, "signal-A", 5)
+    A.eq(out.changed, nil, "stejná hodnota")
+    R.setitem(out, "signal-A", 0)
+    A.eq(out.changed, true, "smazání nulou")
+    out.changed = nil
+    R.method(out, "clear")
+    A.eq(out.changed, nil, "clear prázdného")
+    R.setitem(out, "signal-B", 1)
+    out.changed = nil
+    R.method(out, "clear")
+    A.eq(out.changed, true, "clear neprázdného")
+  end },
 }
