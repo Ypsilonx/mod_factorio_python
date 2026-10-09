@@ -2,6 +2,7 @@
 require("prototypes.entity")
 require("prototypes.hidden")
 require("prototypes.led")
+require("prototypes.lcd")
 require("prototypes.gui")
 require("prototypes.tips")
 

@@ -52,6 +52,7 @@ DIRECTIONS = [("north", 0.0), ("east", -90.0), ("south", 180.0), ("west", 90.0)]
 ICON_PX, TECH_PX, THUMB_PX = 64, 256, 144
 ICON_ORTHO = 2.5                 # záběr ikon v dlaždicích (celá budova včetně LCD)
 ICON_SHIFT = 0.2                 # posun záběru ikon nahoru v dlaždicích (LCD převyšuje budovu)
+LCD_SAMPLES = 16                 # vzorky Cycles pro snímky textu displeje (jen svítící řádky, holdout zbytku)
 
 
 def reset_scene():
@@ -209,13 +210,53 @@ def game_points(scene, camera, root, sun, frame_tiles):
     return wire_point("in"), wire_point("out"), R.to_game(scene, camera, frame_tiles, led)
 
 
+def lcd_frames(scene, parts, ground, screen, direction):
+    """Snímky rolujícího textu displeje pro aktuální natočení: renderují se jen řádky kódu, ostatní díly jsou
+    holdout (zakryjí text, kde jsou před ním, a jinak zůstanou průhledné). Po renderu řádky smaže – základní
+    sprite budovy má displej zhasnutý."""
+    samples = scene.cycles.samples
+    scene.cycles.samples = LCD_SAMPLES
+    for obj in parts:
+        obj.hide_render = False
+        obj.visible_camera = True  # stínová vrstva je skryla kameře – holdout musí být vidět, aby text zakryl
+        obj.is_holdout = True
+    ground.hide_render = True
+    frames = []
+    for frame in range(len(L.LCD_CODE)):
+        pyntr_model.lcd_lines(screen, frame)
+        path = str(RENDERS / f"lcd-{direction}-{frame:02d}.png")
+        scene.render.filepath = path
+        bpy.ops.render.render(write_still=True, scene=scene.name)
+        frames.append(R.downsample(R.load_pixels(path)))
+    for obj in parts:
+        obj.is_holdout = False
+    scene.cycles.samples = samples
+    pyntr_model.clear_lcd_lines(screen)
+    return frames
+
+
+def crop_frames(frames, frame_px, frame_tiles):
+    """Ořízne snímky na společný obdélník s textem (+ okraj) a vrátí (snímky, poloha středu v dlaždicích, w, h).
+    Směr, kde je displej otočený od kamery (text není vidět), vrátí None."""
+    alpha = np.max(np.stack([f[..., 3] for f in frames]), axis=0)
+    ys, xs = np.nonzero(alpha > 0.02)
+    if len(xs) == 0:
+        return None
+    y0, y1 = max(ys.min() - 2, 0), min(ys.max() + 3, frame_px)
+    x0, x1 = max(xs.min() - 2, 0), min(xs.max() + 3, frame_px)
+    px_per_tile = frame_px / frame_tiles
+    center = (((x0 + x1) / 2 - frame_px / 2) / px_per_tile, ((y0 + y1) / 2 - frame_px / 2) / px_per_tile)
+    return [f[y0:y1, x0:x1] for f in frames], center, x1 - x0, y1 - y0
+
+
 def lua_point(p):
     """Bod jako Lua tabulka {x, y} (4 desetinná místa)."""
     return "{ %.4f, %.4f }" % tuple(p)
 
 
-def write_graphics_data(frame_px, frame_tiles, points):
-    """Zapíše body drátů a LED pro všechny směry do Pythonator/prototypes/graphics_data.lua."""
+def write_graphics_data(frame_px, frame_tiles, points, lcd):
+    """Zapíše body drátů, LED a polohu animace displeje pro všechny směry do Pythonator/prototypes/graphics_data.lua.
+    `lcd` = [(střed v dlaždicích, šířka, výška) nebo None] pro směry N, E, S, W."""
     def conn(c):
         return ("{ wire = { red = %s, green = %s }, shadow = { red = %s, green = %s } }"
                 % (lua_point(c["wire"]["red"]), lua_point(c["wire"]["green"]),
@@ -228,12 +269,17 @@ def write_graphics_data(frame_px, frame_tiles, points):
              "  input = {"]
     lines += [f"    {conn(p[1])}," for p in points] + ["  },", "  output = {"]
     lines += [f"    {conn(p[2])}," for p in points] + ["  },", "  led = {"]
-    lines += [f"    {lua_point(p[3])}," for p in points] + ["  },", "}", ""]
+    lines += [f"    {lua_point(p[3])}," for p in points] + ["  },"]
+    lines += [f"  lcd_frames = {len(L.LCD_CODE)},", "  lcd = {"]
+    # false = displej otočený od kamery, animace pro tento směr není
+    lines += [f"    {{ offset = {lua_point(e[0])}, width = {e[1]}, height = {e[2]} }}," if e else "    false,"
+              for e in lcd]
+    lines += ["  },", "}", ""]
     (MOD / "prototypes" / "graphics_data.lua").write_text("\n".join(lines), encoding="utf-8")
 
 
-def render_sprites(scene, root, parts, coll):
-    """Sprity budovy (4 směry × budova + stín), LED, ikony, thumbnail a data bodů pro prototyp."""
+def render_sprites(scene, root, parts, coll, screen):
+    """Sprity budovy (4 směry × budova + stín), animace displeje, LED, ikony, thumbnail a data bodů pro prototyp."""
     RENDERS.mkdir(exist_ok=True)
     cfg = CONFIG["camera"]
     frame_tiles, px_per_tile = cfg["frame_tiles"], cfg["px_per_tile"]
@@ -247,20 +293,38 @@ def render_sprites(scene, root, parts, coll):
 
     R.setup_render(scene, frame_px)
     camera.data.ortho_scale = frame_tiles
-    sheets, points = {"base": [], "shadow": []}, []
+    sheets, points, lcd, lcd_sheets = {"base": [], "shadow": []}, [], [], []
+    entity_dir = MOD / "graphics" / "entity"
+    entity_dir.mkdir(parents=True, exist_ok=True)
+    pyntr_model.clear_lcd_lines(screen)
     for direction, angle in DIRECTIONS:
         root.rotation_euler[2] = math.radians(angle)
         for mode in sheets:
             sheets[mode].append(layer(scene, f"entity-{direction}-{mode}", mode, parts, ground))
         points.append((direction, *game_points(scene, camera, root, sun, frame_tiles)))
-    entity_dir = MOD / "graphics" / "entity"
-    entity_dir.mkdir(parents=True, exist_ok=True)
+        frames = lcd_frames(scene, parts, ground, screen, direction)
+        lcd_sheets.append(frames)
+        sheet_path = entity_dir / f"pythonator-lcd-{direction}.png"
+        crop = crop_frames(frames, frame_px, frame_tiles)
+        lcd.append(crop and crop[1:])
+        if crop:
+            R.save_pixels(np.concatenate(crop[0], axis=1), str(sheet_path))
+        elif sheet_path.exists():
+            sheet_path.unlink()
     for mode, frames in sheets.items():
         name = "pythonator.png" if mode == "base" else "pythonator-shadow.png"
         R.save_pixels(np.concatenate(frames, axis=1), str(entity_dir / name))
     glow = R.led_glow()
     R.save_pixels(np.concatenate([np.zeros_like(glow), glow], axis=1), str(entity_dir / "pythonator-led.png"))
-    write_graphics_data(frame_px, frame_tiles, points)
+    write_graphics_data(frame_px, frame_tiles, points, lcd)
+    # Kontrolní náhled animace displeje (sever, 6× zvětšené okolí displeje): snímky vedle sebe.
+    (cx, cy), w, h = lcd[0]
+    px_per_tile = frame_px / frame_tiles
+    x0 = int(frame_px / 2 + cx * px_per_tile - w)
+    y0 = int(frame_px / 2 + cy * px_per_tile - h)
+    strip = [R.over(sheets["base"][0], f)[y0:y0 + 2 * h, x0:x0 + 2 * w] for f in lcd_sheets[0]]
+    R.save_pixels(np.repeat(np.repeat(np.concatenate(strip, axis=1), 6, axis=0), 6, axis=1),
+                  str(RENDERS / "lcd-preview.png"))
 
     # Kontrolní list jako ve hře: 4 směry na písku se stínem (jen náhled, do modu nejde).
     rows = []
@@ -273,8 +337,9 @@ def render_sprites(scene, root, parts, coll):
         rows.append(R.over(R.over(sand, shade), base))
     R.save_pixels(np.concatenate(rows, axis=1), str(RENDERS / "sheet.png"))
 
-    # Ikony a thumbnail (směr sever, těsnější záběr).
+    # Ikony a thumbnail (směr sever, těsnější záběr) – se zapnutým displejem (první snímek textu).
     root.rotation_euler[2] = 0.0
+    parts = parts + pyntr_model.lcd_lines(screen, 0)
     camera.data.ortho_scale = ICON_ORTHO
     camera.data.shift_y = ICON_SHIFT / ICON_ORTHO
     icons = MOD / "graphics" / "icons"
@@ -302,7 +367,8 @@ def render_sprites(scene, root, parts, coll):
 def main(stage):
     """Postaví scénu; ve stage "preview" udělá náhledy, ve "render" vyrenderuje sprity."""
     scene, coll, ref = reset_scene()
-    root, parts, led = pyntr_model.build(coll, str(RENDERS))
+    root, parts, led, screen = pyntr_model.build(coll, str(RENDERS))
+    pyntr_model.lcd_lines(screen, 0)  # model a náhledy se zapnutým displejem
     stretch = bpy.data.objects.new("PYNTR_stretch", None)
     coll.objects.link(stretch)
     root.parent = stretch
@@ -312,7 +378,7 @@ def main(stage):
     if stage == "preview":
         render_previews(scene, ref)
     if stage == "render":
-        info = render_sprites(scene, root, parts + [led], coll)
+        info = render_sprites(scene, root, parts + [led], coll, screen)
     if not bpy.app.background:
         show_game_view()
     return {"parts": len(parts), "stage": stage, **info}

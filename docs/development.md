@@ -171,24 +171,26 @@ napodobené API – čísla jen pro porovnání změn).
 Skripty jsou zdroj pravdy, výstupy (PNG, `prototypes/graphics_data.lua`) se ručně neupravují.
 - Spuštění v běžícím Blenderu přes MCP: `exec` souboru `blender/build_sprites.py` s `PYNTR_STAGE` = `model` (jen scéna), `preview` (náhledy do `blender/renders/`, gitignored) nebo `render` (sprity do modu, ~2 min).
 - Headless: `blender -b --factory-startup --python blender/build_sprites.py` (výchozí fáze `render`).
-- Výstupy: `graphics/entity/pythonator.png` + `-shadow.png` (4 směry N, E, S, W vedle sebe, 224 px = 3,5 dlaždice, `scale = 0.5`), `pythonator-led.png` (záře LED, 2 snímky), `graphics/icons/pythonator.png` (64), `graphics/technology/pythonator.png` (256), `thumbnail.png` (144), `prototypes/graphics_data.lua` (body drátů a poloha LED promítnuté stejnou kamerou).
+- Výstupy: `graphics/entity/pythonator.png` + `-shadow.png` (4 směry N, E, S, W vedle sebe, 224 px = 3,5 dlaždice, `scale = 0.5`), `pythonator-led.png` (záře LED, 2 snímky), `pythonator-lcd-{north,east,west}.png` (rolující text displeje, výřez × 12 snímků; na jihu je displej otočený od kamery a animaci nemá), `graphics/icons/pythonator.png` (64), `graphics/technology/pythonator.png` (256), `thumbnail.png` (144), `prototypes/graphics_data.lua` (body drátů, poloha LED a výřezů displeje promítnuté stejnou kamerou).
 - Projekce: ortografická kamera pod 45°, model natažený v ose Y o √2 (čtvercová dlaždice jako ve hře).
 
 | Co ladit | Kde |
 |---|---|
 | Kamera, světla, šířka snímku | `blender/camera.toml` |
-| Rozměry a polohy součástek, drátky, LCD, logo | `blender/pyntr_layout.py` (sdílí model i textura desky) |
+| Rozměry a polohy součástek, drátky, LCD; „program“ na displeji (`LCD_CODE`, `LCD_VISIBLE`) | `blender/pyntr_layout.py` (sdílí model i textura desky) |
 | Materiály a míra prachu | `blender/pyntr_materials.py` (parametr `dust`), patina `blender/pyntr_patina.py` |
 | Textura plošného spoje (barvy, šířky, semínko cest) | `blender/pyntr_pcb.py` (`MASK`, `TRACE_W`, `SEED` …) |
-| Logo Pythonu (tvar, barvy, svit) | `blender/pyntr_logo.py` (`SNAKE`, `EYE_POS`, `GLOW`) – vlastní stylizace, ochrannou známku PSF ověřit před publikací |
 | Záběr ikon | `ICON_ORTHO`, `ICON_SHIFT` v `blender/build_sprites.py` |
 | Barvy stavové LED | `COLORS` v `Pythonator/scripts/indicator.lua` |
 | Rytmus blikání | `BLINK`, `ANIMATION_SPEED` v `Pythonator/prototypes/led.lua` |
+| Rychlost rolování displeje, barva textu při chybě | `LCD_SPEED`, `LCD_ERROR_TINT` v `Pythonator/scripts/indicator.lua` |
+| Kvalita renderu snímků displeje | `LCD_SAMPLES` v `blender/build_sprites.py` |
 
 ### Ruční kontrola grafiky ve hře
 - [ ] Budova ve všech 4 směrech (R): sedí na mřížce 2×2, stín doprava dolů, LCD vzadu.
 - [ ] Dráty: červený/zelený se připojí na šroubky vstupní (u výstupu kombinátoru vstup = strana „vstupu“ při najetí myší) a výstupní svorkovnice ve všech směrech; stín drátu sedí.
 - [ ] Stavová LED: bez kódu zhasnutá, po nahrání kódu bliká zeleně, `stop` = žlutá, chyba = červená; po otočení budovy LED „sedí“ na objímce.
+- [ ] Displej: bez kódu tmavý, za běhu rolují řádky kódu, při pauze text stojí, při chybě stojí červeně, bez proudu zhasne; po otočení (sever, východ, západ) sedí na obrazovce, na jihu je vidět jen zadní strana displeje. Rychlost rolování (`LCD_SPEED`) a blikání LED odpovídá záměru (LED ~1× za sekundu).
 - [ ] Ikona v inventáři, ve stromu výzkumu a thumbnail v seznamu modů.
 
 ## Známá omezení a odložené drobnosti (review plánu 2)
@@ -204,3 +206,16 @@ Skripty jsou zdroj pravdy, výstupy (PNG, `prototypes/graphics_data.lua`) se ru�
 - Vektorové operace jsou zhruba stejně drahé jako ruční smyčka (`lua tools/bench-lang.lua`: `each2x` vs `loop2x`); řetězení `where(...).each(...)` = víc průchodů. Výhodou je hlavně kratší zápis.
 - `timer` po výpadku proudu (`dt` přes několik period) vystřelí jen jednou; `pid` s mezemi při saturaci nepřičítá integrál (podmíněná integrace), výstup po odchodu ze saturace skočí.
 - Panel signálů ukazuje kvalitu jen v tooltipu (ikona `sprite-button` kvalitu nevykreslí).
+
+## Publikace (mods.factorio.com)
+- Popis na portálu (EN): `docs/mod-portal.md`; shrnutí = `description` v `Pythonator/info.json` (max. 500 znaků).
+- Obrázky na stránku modu: `docs/screenshots/01-….png`, `02-….png` … (pořadí podle jména).
+- API klíč: `~/.factorio-api-key/all_api_key.txt` (výchozí v `tools/publish.sh`), nikdy do repozitáře.
+- Odkaz na zdrojový kód: proměnná `PYNTR_SOURCE_URL` (prázdná = na portál se nepošle).
+- Postup prvního vydání:
+  1. Projít checklist ruční kontroly výše, `run-unit.sh`, `run-tests.sh vanilla` a `space-age` zelené.
+  2. `bash tools/publish.sh --new --dry-run` – kontroly (jméno volné, changelog, shrnutí) a sestavení `dist/Pythonator_<verze>.zip`.
+  3. `bash tools/publish.sh --new` – zveřejnění a údaje (kategorie content, licence MIT, tag circuit-network). **Jméno modu je pak neměnné.**
+  4. `bash tools/portal-images.sh` – obrázky ze `docs/screenshots/`.
+- Další verze: zvýšit `version` v `info.json` + sekce v `changelog.txt` → testy → commit → `bash tools/publish.sh` (případně `--details` pro aktualizaci popisu).
+- Ochranná známka: „Python“ je známka PSF – popis na portálu obsahuje prohlášení, že mod není s PSF spojený; na budově žádné logo Pythonu není (displej ukazuje jen řádky kódu).

@@ -1,7 +1,7 @@
 """Procedurální model Pythonatoru: „bastlený“ řídicí počítač – na soklu natřená skříňka s větráním, nad ní na
 distančních sloupcích deska plošných spojů (generovaná textura, pyntr_pcb) s procesorem a chladičem, čipy,
 kondenzátory, rezistory, krystalem, cívkou, pojistkou, hřebínky pinů a propojovacími drátky s konektory Dupont. Vpředu vstupní svorkovnice, v zadních rozích výstupní, vzadu nakloněný LCD s „řádky kódu“
-a malým logem Pythonu v rohu a vpravo vpředu stavová LED (blikátko, renderuje se zvlášť).
+(za běhu rolují – animace se renderuje zvlášť) a vpravo vpředu stavová LED (blikátko, renderuje se zvlášť).
 
 Rozměry a polohy jsou v pyntr_layout (sdílí je s texturou desky). +Y = sever, kamera hry se dívá od jihu.
 """
@@ -12,7 +12,6 @@ import bpy
 from mathutils import Vector
 
 import pyntr_layout as L
-import pyntr_logo
 import pyntr_materials as M
 
 DUPONT = (0.026, 0.026, 0.06)    # konektor Dupont nasazený na pin (š × h × v)
@@ -260,14 +259,6 @@ def lcd(collection, mats):
     items = [box("PYNTR_lcd_bezel", (w, 0.05, h), (0, 0, 0), mats["lcd_bezel"], bevel=0.012, collection=collection),
              box("PYNTR_lcd_screen", (w - 0.08, 0.01, h - 0.08), (0, -0.027, 0.04), mats["lcd_screen"],
                  collection=collection)]
-    line_h, gap = 0.026, 0.018
-    left = -(w - 0.08) / 2 + 0.03
-    for i, (indent, length) in enumerate(L.LCD_LINES):
-        z = h - 0.07 - i * (line_h + gap) - line_h
-        lw = (w - 0.16) * length
-        items.append(box(f"PYNTR_lcd_line{i}", (lw, 0.006, line_h), (left + indent * 0.05 + lw / 2, -0.034, z),
-                         mats["lcd_text"], collection=collection))
-    items.append(logo(w, h, collection))
     for obj in items:
         obj.parent = panel
     legs = [box(f"PYNTR_lcd_leg{side}", (0.03, 0.03, 0.06), (L.LCD_POS[0] + side * (w / 2 - 0.08), L.LCD_POS[1], L.PCB_TOP),
@@ -275,17 +266,24 @@ def lcd(collection, mats):
     return panel, items + legs
 
 
-def logo(w, h, collection):
-    """Stylizované logo Pythonu v pravém horním rohu obrazovky LCD (souřadnice panelu)."""
-    size = L.LOGO_SIZE
-    x = (w - 0.08) / 2 - 0.015 - size / 2
-    z = h - 0.055 - size / 2
-    bpy.ops.mesh.primitive_plane_add(size=size, location=(x, -0.0335, z), rotation=(math.radians(90), 0, 0))
-    obj = bpy.context.active_object
-    obj.name = "PYNTR_lcd_logo"
-    obj.data.materials.append(pyntr_logo.material())
-    move_to(obj, collection)
-    return obj
+def lcd_lines(screen, frame=0):
+    """Svítící „řádky kódu“ na displeji pro snímek animace `frame` (okno LCD_VISIBLE řádků do LCD_CODE).
+    Řádky z minulého snímku smaže. `screen` vrací build(). Vrací nové objekty řádků."""
+    collection, mats, panel = screen["collection"], screen["mats"], screen["panel"]
+    clear_lcd_lines(screen)
+    w, h = L.LCD_SIZE
+    line_h, gap = 0.026, 0.018
+    left = -(w - 0.08) / 2 + 0.03
+    lines = []
+    for i in range(L.LCD_VISIBLE):
+        indent, length = L.LCD_CODE[(frame + i) % len(L.LCD_CODE)]
+        z = h - 0.07 - i * (line_h + gap) - line_h
+        lw = (w - 0.16) * length
+        obj = box(f"PYNTR_lcd_line{i}", (lw, 0.006, line_h), (left + indent * 0.05 + lw / 2, -0.034, z),
+                  mats["lcd_text"], collection=collection)
+        obj.parent = panel
+        lines.append(obj)
+    return lines
 
 
 def led(collection, mats):
@@ -302,7 +300,8 @@ def led(collection, mats):
 
 
 def build(collection, work_dir):
-    """Postaví model do kolekce; vrátí kořenový prázdný objekt (natáčení), seznam dílů a kopuli LED."""
+    """Postaví model do kolekce; vrátí kořenový prázdný objekt (natáčení), seznam dílů, kopuli LED a displej
+    (`screen` pro lcd_lines – řádky kódu se přestavují podle snímku animace, nejsou v seznamu dílů)."""
     mats = M.build_all(work_dir)
     parts = base(collection, mats)
     parts += cpu(collection, mats)
@@ -320,4 +319,10 @@ def build(collection, work_dir):
     for p in parts + lcd_parts + [dome, panel]:
         if p.parent is None:
             p.parent = root
-    return root, parts + lcd_parts, dome
+    return root, parts + lcd_parts, dome, {"panel": panel, "mats": mats, "collection": collection}
+
+
+def clear_lcd_lines(screen):
+    """Smaže řádky kódu z displeje (základní sprite budovy má displej zhasnutý)."""
+    for obj in [o for o in screen["collection"].objects if o.name.startswith("PYNTR_lcd_line")]:
+        bpy.data.objects.remove(obj, do_unlink=True)

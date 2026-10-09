@@ -10,3 +10,6 @@ Date: 2026-10-09
     - Combinator library: vector operations (each, where, count, sum, max_key, min_key, out.set, out.add) and
       stateful elements (latch, timer, edge, counter, delay, pid).
     - Help window with language reference and examples that can be inserted into the editor.
+    - Building display shows scrolling code while the program runs, frozen text while paused, red text on an
+      error.
+    - Tips and tricks category Pythonator with the full language reference and examples.

@@ -78,6 +78,7 @@ function M.remove(unit)
   local ctl = controller.get(unit)
   if not ctl then return end
   if ctl.led and ctl.led.valid then ctl.led.destroy() end
+  if ctl.lcd and ctl.lcd.valid then ctl.lcd.destroy() end
   io.detach_outputs(ctl.outputs)
   controller.destroy(unit)
   for _, f in ipairs(M.on_removed) do f(unit) end

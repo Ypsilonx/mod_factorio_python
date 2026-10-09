@@ -90,7 +90,11 @@ return {
     local lifecycle = require("scripts.lifecycle")
     local got
     lifecycle.on_removed[#lifecycle.on_removed + 1] = function(unit) got = unit end
+    local screen = { valid = true }
+    function screen.destroy() screen.valid = false end
+    ctl.lcd = screen
     lifecycle.remove(ctl.unit)
+    A.eq(screen.valid, false, "displej (rendering) zrušen")
     A.eq(got, 3, "unit odstraněné budovy")
     A.eq(require("scripts.controller").get(3), nil, "stav smazán")
   end },

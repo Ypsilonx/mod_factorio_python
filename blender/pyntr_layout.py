@@ -29,7 +29,11 @@ TERMINAL_HOLE_Z = 0.045          # výška otvoru pro drát nad deskou
 LCD_POS = (0.0, 0.70)
 LCD_SIZE = (0.72, 0.36)
 LCD_TILT = 25.0                  # náklon dozadu (°) – obrazovka natočená ke kameře hry
-LCD_LINES = [(0, 0.55), (1, 0.70), (2, 0.45), (2, 0.62), (1, 0.38), (0, 0.50)]  # (odsazení, délka) řádků kódu
+# „Program“ na displeji: (odsazení, délka) řádků. Displej ukazuje LCD_VISIBLE řádků; běžící program je posouvá
+# o řádek na snímek animace (snímků = počet řádků, pak se smyčka opakuje).
+LCD_CODE = [(0, 0.55), (1, 0.70), (2, 0.45), (2, 0.62), (1, 0.38), (0, 0.50),
+            (1, 0.60), (2, 0.30), (3, 0.52), (2, 0.66), (1, 0.42), (0, 0.24)]
+LCD_VISIBLE = 6
 
 LED_POS = (0.66, -0.60)
 LED_R = 0.04
@@ -71,7 +75,6 @@ JUMPERS = [
     ("jumper_yellow", ("pin", "main", 6, 1), ("pin", "cpu_s", 2, 0), 0.11, 0.06),
     ("jumper_blue", ("pin", "dips", 3, 0), ("pin", "cpu_n", 1, 0), 0.12, -0.06),
 ]
-LOGO_SIZE = 0.075               # stylizované logo Pythonu v pravém horním rohu LCD (strana čtverce, m)
 
 
 def header_pin(name, col, row):
