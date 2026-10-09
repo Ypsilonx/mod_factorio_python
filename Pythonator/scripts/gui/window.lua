@@ -4,6 +4,7 @@
 local controller = require("scripts.controller")
 local actions = require("scripts.actions")
 local editor = require("scripts.gui.editor")
+local status = require("scripts.gui.status")
 
 local M = {}
 
@@ -66,6 +67,7 @@ function M.open(player, ctl)
   refs.scroll, refs.gutter, refs.code = ed.scroll, ed.gutter, ed.code
   refs.left = left
   refs.side = body.add({ type = "flow", name = "pyntr_side", direction = "vertical" })
+  status.build(left, refs.side, refs)
   all()[player.index] = { unit = ctl.unit, refs = refs, text = nil }
   frame.force_auto_center()
   M.refresh(player)
@@ -87,6 +89,15 @@ function M.refresh(player)
   st.refs.code.read_only = not view.can.edit
   editor.set_text(st.refs, text)
   st.text = text
+  status.update(st.refs, view, st)
+end
+
+--- Obnoví jen tlačítka a stav (ne text editoru – hráč právě píše).
+--- @param player LuaPlayer
+function M.refresh_status(player)
+  local st = all()[player.index]
+  local ctl = st and controller.get(st.unit)
+  if ctl and st.refs.frame.valid then status.update(st.refs, actions.view(ctl), st) end
 end
 
 --- Hráči, kteří mají otevřené okno budovy `unit`.

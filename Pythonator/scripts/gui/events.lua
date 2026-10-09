@@ -11,7 +11,17 @@ local M = {}
 --- Obsluha kliknutí podle tagu: function(player, st, ctl, element).
 local CLICK = {
   close = function(player) window.close(player) end,
+  play = function(_, st, ctl) actions.play(ctl, st.refs.code.text) end,
+  pause = function(_, _, ctl) actions.pause(ctl) end,
+  reset = function(_, _, ctl) actions.reset(ctl) end,
+  step = function(_, _, ctl) actions.step(ctl, game.tick) end,
+  goto_error = function(_, st)
+    if st.error_line then editor.scroll_to(st.refs, st.error_line) end
+  end,
 }
+
+--- Akce, po kterých se obnoví všechna okna nad budovou (změnily stav kontroléru).
+local CHANGES_STATE = { play = true, pause = true, reset = true, step = true }
 M.CLICK = CLICK
 
 --- Stav okna hráče z události a jeho kontrolér; nil, pokud událost nepatří našemu oknu.
@@ -49,8 +59,11 @@ end
 function M.on_gui_click(event)
   local player, st, ctl, element = context(event)
   if not player then return end
-  local handler = CLICK[element.tags.pyntr_action]
-  if handler then handler(player, st, ctl, element) end
+  local action = element.tags.pyntr_action
+  local handler = CLICK[action]
+  if not handler or (CHANGES_STATE[action] and not ctl) then return end
+  handler(player, st, ctl, element)
+  if CHANGES_STATE[action] then window.refresh_unit(ctl.unit) end
 end
 
 --- Psaní v editoru: uloží draft, upraví čísla řádků a posune pohled; ostatním oknům nad budovou obnoví text.
@@ -61,6 +74,8 @@ function M.on_gui_text_changed(event)
   editor.follow(st.refs, st.text or "", new)
   st.text = new
   actions.set_draft(ctl, new)
+  -- vlastní okno: jen tlačítka a stav (Play se změněným textem), text boxu nepřepisovat
+  window.refresh_status(player)
   for _, other in ipairs(window.viewers(ctl.unit)) do
     if other.index ~= player.index then window.refresh(other) end
   end

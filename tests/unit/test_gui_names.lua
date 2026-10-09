@@ -11,6 +11,7 @@ local API_JSON = os.getenv("FACTORIO_API_JSON") or "C:/STEAM/steamapps/common/Fa
 local GUI_FILES = {
   "Pythonator/scripts/gui/window.lua",
   "Pythonator/scripts/gui/editor.lua",
+  "Pythonator/scripts/gui/status.lua",
 }
 
 --- Celý soubor jako text (nebo nil).
@@ -32,7 +33,24 @@ local function reserved_names(api)
   return set
 end
 
+--- Vanilla styly GUI (pro kontrolu, že použitý styl existuje – chybějící shodí hru až při otevření okna).
+local STYLE_LUA = os.getenv("FACTORIO_STYLE_LUA") or "C:/STEAM/steamapps/common/Factorio/data/core/prototypes/style.lua"
+
 return {
+  { "použité styly existují (vanilla nebo prototypes/gui.lua)", function()
+    local vanilla = read(STYLE_LUA)
+    if not vanilla then
+      print("SKIP styly: chybí " .. STYLE_LUA)
+      return
+    end
+    local ours = read("Pythonator/prototypes/gui.lua")
+    for _, file in ipairs(GUI_FILES) do
+      for style in read(file):gmatch('style%s*=%s*"([%w_]+)"') do
+        local found = vanilla:find("\n%s*" .. style .. "%s*=") or ours:find("styles%." .. style .. "%s*=")
+        A.truthy(found, file .. ": styl '" .. style .. "' neexistuje")
+      end
+    end
+  end },
   { "jména prvků okna nekolidují s LuaGuiElement a mají prefix", function()
     local api = read(API_JSON)
     if not api then
