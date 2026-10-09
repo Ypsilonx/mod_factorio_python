@@ -1,6 +1,7 @@
 --- Kontrola programu: rozsahy jmen, global/local, omezení jazyka, klíče signálů → kanonické řetězce.
 local errors = require("scripts.lang.errors")
 local signals = require("scripts.lang.signals")
+local vector = require("scripts.lang.vector")
 
 local M = {}
 
@@ -8,6 +9,9 @@ M.SIGNAL_OBJS = { inp = "r", red = "r", green = "r", out = "w", out_red = "w", o
 M.READONLY = { tick = true, game_tick = true, dt = true }
 M.BUILTINS = {}
 for w in ("abs min max round int float str bool len range sum sorted print"):gmatch("%S+") do M.BUILTINS[w] = true end
+
+--- Platné operátory vektorových metod (sdílené s runtime, viz scripts/lang/vector.lua).
+local VECTOR_OPS = { each = vector.ARITH_OPS, where = vector.COMPARE_OPS, count = vector.COMPARE_OPS }
 
 --- Je uzel holé jméno objektu signálů?
 local function is_sigobj(e) return e.k == "Name" and M.SIGNAL_OBJS[e.id] ~= nil end
@@ -120,12 +124,21 @@ function C:expr(e, ctx)
   elseif k == "Call" then
     self:call(e, ctx)
   elseif k == "Method" then
+    -- Konstantní operátor vektorové operace se ověří už při překladu (překlep = chyba s řádkem).
+    local ops = VECTOR_OPS[e.name]
+    local op = e.args[1]
+    if ops and op and op.k == "Str" and not ops[op.v] then
+      errors.raise(op.line, op.col, "bad-op", op.v, e.name)
+    end
     if is_sigobj(e.obj) then
       if e.name == "get" and e.args[1] then self:resolve_key(e.args[1]) end
     else
       self:expr(e.obj, ctx)
     end
-    for _, a in ipairs(e.args) do self:expr(a, ctx) end
+    for _, a in ipairs(e.args) do
+      -- out.set(inp) / out.add(red): objekt signálů jako sada (jinak objekty signálů nejsou hodnoty).
+      if not ((e.name == "set" or e.name == "add") and is_sigobj(a)) then self:expr(a, ctx) end
+    end
   elseif k == "Subscript" then
     if is_sigobj(e.value) then
       self:resolve_key(e.index)

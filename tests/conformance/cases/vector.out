@@ -1,0 +1,51 @@
+each+ [('copper-plate', 4), ('iron-plate', -6), ('signal-A', -2147483648), ('signal-B', 4)]
+each* [('copper-plate', 9), ('iron-plate', -21), ('signal-A', 2147483645), ('signal-B', 9)]
+each/ [('copper-plate', 1), ('iron-plate', -3), ('signal-A', 1073741823), ('signal-B', 1)]
+each% [('iron-plate', -1), ('signal-A', 1)]
+each/0 []
+each** [('copper-plate', 9), ('iron-plate', 49), ('signal-A', 1), ('signal-B', 9)]
+each<< [('copper-plate', 6), ('iron-plate', -14), ('signal-A', -2), ('signal-B', 6)]
+each>> [('copper-plate', 1), ('iron-plate', -4), ('signal-A', 1073741823), ('signal-B', 1)]
+each& [('copper-plate', 2), ('signal-A', 6), ('signal-B', 2)]
+where> [('signal-A', 2147483647)]
+chain [('signal-A', 2147483644)]
+count 4 3 2
+sum 2147483646 -1
+max signal-A copper-plate iron-plate
+empty None 0
+out [('copper-plate', 3), ('signal-B', 3)]
+out-self [('copper-plate', 3), ('signal-B', 3)]
+each+ [('copper-plate', 5), ('iron-plate', -6), ('signal-A', -2147483648), ('signal-B', 5)]
+each* [('copper-plate', 12), ('iron-plate', -21), ('signal-A', 2147483645), ('signal-B', 12)]
+each/ [('copper-plate', 2), ('iron-plate', -3), ('signal-A', 1073741823), ('signal-B', 2)]
+each% [('copper-plate', 1), ('iron-plate', -1), ('signal-A', 1), ('signal-B', 1)]
+each/0 []
+each** [('copper-plate', 16), ('iron-plate', 49), ('signal-A', 1), ('signal-B', 16)]
+each<< [('copper-plate', 8), ('iron-plate', -14), ('signal-A', -2), ('signal-B', 8)]
+each>> [('copper-plate', 2), ('iron-plate', -4), ('signal-A', 1073741823), ('signal-B', 2)]
+each& [('copper-plate', 4), ('signal-A', 6), ('signal-B', 4)]
+where> [('copper-plate', 4), ('signal-A', 2147483647), ('signal-B', 4)]
+chain [('signal-A', 2147483643)]
+count 4 1 2
+sum 2147483648 1
+max signal-A copper-plate iron-plate
+empty None 0
+out [('copper-plate', 4), ('signal-B', 4)]
+out-self [('copper-plate', 4), ('signal-B', 4)]
+each+ [('copper-plate', 6), ('iron-plate', -6), ('signal-A', -2147483648), ('signal-B', 6)]
+each* [('copper-plate', 15), ('iron-plate', -21), ('signal-A', 2147483645), ('signal-B', 15)]
+each/ [('copper-plate', 2), ('iron-plate', -3), ('signal-A', 1073741823), ('signal-B', 2)]
+each% [('copper-plate', 2), ('iron-plate', -1), ('signal-A', 1), ('signal-B', 2)]
+each/0 []
+each** [('copper-plate', 25), ('iron-plate', 49), ('signal-A', 1), ('signal-B', 25)]
+each<< [('copper-plate', 10), ('iron-plate', -14), ('signal-A', -2), ('signal-B', 10)]
+each>> [('copper-plate', 2), ('iron-plate', -4), ('signal-A', 1073741823), ('signal-B', 2)]
+each& [('copper-plate', 4), ('signal-A', 6), ('signal-B', 4)]
+where> [('copper-plate', 5), ('signal-A', 2147483647), ('signal-B', 5)]
+chain [('signal-A', 2147483642)]
+count 4 1 2
+sum 2147483650 3
+max signal-A copper-plate iron-plate
+empty None 0
+out [('copper-plate', 5), ('signal-B', 5)]
+out-self [('copper-plate', 5), ('signal-B', 5)]

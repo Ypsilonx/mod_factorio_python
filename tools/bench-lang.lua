@@ -25,6 +25,9 @@ local PROGRAMS = {
     "            on[k] = False",
     "        out[k] = 1 if on.get(k, False) else 0",
   }, "\n") },
+  -- Stejná logika ruční smyčkou a knihovnou kombinátorů (porovnání ceny vektorových operací).
+  { "loop2x", "config(outputs='clear')\ndef loop():\n    for k, v in inp.items():\n        if v > 10:\n            out[k] = v * 2" },
+  { "each2x", "config(outputs='clear')\ndef loop():\n    out.set(inp.where('>', 10).each('*', 2))" },
   { "arith", table.concat({
     "acc = 0",
     "def loop():",

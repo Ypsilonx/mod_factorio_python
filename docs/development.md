@@ -41,6 +41,7 @@
 - Klíčem slovníku může být jen `str`, číslo nebo `bool`.
 - `def` na nejvyšší úrovni jsou dostupné i před svou definicí (hoisting).
 - Přiřazení do globálu ve funkci bez `global` je chyba překladu (Python by vytvořil lokální proměnnou).
+- Knihovna kombinátorů (`each`, `where`, `count`, `sum`, `max_key`, `min_key`, `set`, `add`) nemá v CPythonu obdobu; konformní harness ji napodobuje třídou `Signals`. Vektorové metody má v Pythonatoru i obyčejný `dict` (kvůli řetězení), v CPythonu jen výsledky knihovny. Aritmetika `each` je jako u kombinátoru: `/` a `%` k nule, dělení nulou = 0, int32.
 
 ## Determinismus (multiplayer)
 - Kód jazyka nesmí záviset na locale: řetězce se porovnávají a řadí po bajtech (`R.strcmp`), lexer používá jen ASCII třídy znaků (`[A-Za-z0-9_]`, ne `%a/%w`), `upper/lower` mění jen ASCII a čísla se formátují s tečkou i při locale s desetinnou čárkou. Hlídají to testy v `tests/unit/test_hardening.lua` s českým locale.
