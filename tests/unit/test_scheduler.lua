@@ -57,35 +57,46 @@ return {
     local scheduler, ctl, entity = setup()
     scheduler.add(ctl.unit, 1)
     ticks(scheduler, 1, 2)
-    entity.energy = 0
+    entity.energy, entity.status = 0, defines.entity_status.no_power
     ticks(scheduler, 3, 100)
-    entity.energy = 1000
+    entity.energy, entity.status = 1000, defines.entity_status.working
     ticks(scheduler, 101, 200)
-    -- běh v 1 a 2; v ticku 3 bez proudu → další pokus 63 (bez proudu) → 123 s proudem
-    A.truthy(log_of(ctl):find("[(0, 1, 1), (1, 2, 1), (2, 123, 121), ", 1, true), "po obnově: tick +1, dt = celá pauza")
-    A.truthy(log_of(ctl):find("(3, 124, 1)", 1, true), "pak zase po ticku")
+    -- běh v 1, 2 a 3 (skok energie = dobíhá zásobník); v ticku 4 bez proudu → pokus 64 (bez proudu) → 124 s proudem
+    A.truthy(log_of(ctl):find("[(0, 1, 1), (1, 2, 1), (2, 3, 1), (3, 124, 121), ", 1, true), "po obnově: tick +1, dt = celá pauza")
+    A.truthy(log_of(ctl):find("(4, 125, 1)", 1, true), "pak zase po ticku")
   end },
   { "zbytek energie menší než spotřeba ticku = bez proudu (zbouraný sloup)", function()
     local scheduler, ctl, entity = setup()
     scheduler.add(ctl.unit, 1)
     ticks(scheduler, 1, 2)
-    entity.energy = 222 -- zbytek v zásobníku menší než spotřeba jednoho ticku (ověřeno ve hře)
+    -- zbouraný sloup: zbytek v zásobníku menší než spotřeba ticku, stav low_power, žádná síť (ověřeno ve hře)
+    entity.energy, entity.status, entity.electric_network_id = 222, defines.entity_status.low_power, nil
     ticks(scheduler, 3, 50)
-    A.eq(log_of(ctl), "[(0, 1, 1), (1, 2, 1)]", "bez běhu")
+    A.eq(log_of(ctl), "[(0, 1, 1), (1, 2, 1), (2, 3, 1)]", "po skoku energie už bez běhu")
+  end },
+  { "podpětí: zásobník pod spotřebou ticku, ale síť dodává → běží", function()
+    local scheduler, ctl, entity = setup()
+    scheduler.add(ctl.unit, 1)
+    for t = 1, 70 do
+      entity.energy, entity.status = 400 + (t * 7) % 300, defines.entity_status.low_power  -- kolísá jako ve hře
+      scheduler.on_tick(t)
+    end
+    -- první kontrola nemá s čím srovnat → další pokus za 60 ticků, pak už běží každý tick
+    A.eq(ctl.globals.log.n, 10, "běží od ticku 61")
   end },
   { "výpadek proudu, pauza, play: starý výpadek se nezapočte", function()
     local scheduler, ctl, entity = setup()
     local controller = require("scripts.controller")
     scheduler.add(ctl.unit, 1)
     ticks(scheduler, 1, 2)
-    entity.energy = 0
+    entity.energy, entity.status = 0, defines.entity_status.no_power
     ticks(scheduler, 3, 10)
     controller.stop(ctl)
-    entity.energy = 1000
+    entity.energy, entity.status = 1000, defines.entity_status.working
     controller.start(ctl)
     scheduler.add(ctl.unit, 300)
     ticks(scheduler, 300, 300)
-    A.eq(log_of(ctl), "[(0, 1, 1), (1, 2, 1), (1, 300, 1)]", "po play tick stojí, dt = interval")
+    A.eq(log_of(ctl), "[(0, 1, 1), (1, 2, 1), (2, 3, 1), (3, 300, 1)]", "po play tick pokračuje o interval, dt = interval")
   end },
   { "rebuild naplánuje všechny běžící kontroléry", function()
     local scheduler, ctl = setup()

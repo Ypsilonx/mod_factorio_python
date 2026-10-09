@@ -33,11 +33,17 @@ function M.add(unit, tick)
   list[#list + 1] = unit
 end
 
---- Má budova proud? Stejně jako vanilla kombinátor: běží, jen když má v zásobníku energii aspoň na jeden
---- tick. Stav entity spolehlivý není – ověřeno ve hře: po zbourání sloupu hlásí kombinátor napořád low_power
---- a v zásobníku mu zůstane zbytek menší než spotřeba ticku.
+--- Má budova proud? Energie v zásobníku aspoň na jeden tick, nebo se od minulé kontroly změnila.
+--- Sonda (2.0.77): při podpětí se zásobník na celý tick nedoplní, ale energie tick od ticku kolísá a vanilla
+--- kombinátor běží; bez zdroje i bez sloupu stojí energie na zbytku (stav je v obou případech low_power).
+--- Skok energie při výpadku tak pustí ještě jeden běh – odpovídá dobíhání zásobníku.
+--- @return boolean
 local function powered(ctl)
-  return ctl.entity.energy >= ctl.energy_usage
+  local energy = ctl.entity.energy
+  local last = ctl.last_energy
+  ctl.last_energy = energy
+  if energy >= ctl.energy_usage then return true end
+  return last ~= nil and energy ~= last
 end
 
 --- Zpracuje jeden kontrolér v jeho ticku: spustí loop() nebo počká na proud; při úspěchu přeplánuje.

@@ -98,6 +98,87 @@ return {
     },
   },
   {
+    name = "podpětí (zdroj dá polovinu spotřeby): Pythonator běží, když vanilla kombinátor běží",
+    setup = function(ctx)
+      local o = ctx.origin
+      local eei = ctx.surface.create_entity({ name = "electric-energy-interface", position = { o.x + 10, o.y + 10 }, force = "player" })
+      -- Spotřeba Pythonatoru 50 kW + kombinátoru 1 kW ≈ 850 J/tick; zdroj dá zhruba polovinu.
+      eei.power_production = 420
+      eei.electric_buffer_size = 420
+      ctx.surface.create_entity({ name = "substation", position = { o.x + 6, o.y + 6 }, force = "player" })
+      ctx.p = H.pythonator(ctx, 1, 1, "def loop():\n  out['signal-A'] = tick + 1")
+      ctx.v = ctx.surface.create_entity({ name = "arithmetic-combinator", force = "player",
+                                          position = { o.x + 4.5, o.y + 1 } })
+      ctx.v.get_or_create_control_behavior().parameters = { first_signal = H.virtual("signal-each"), second_constant = 0,
+                                                             operation = "+", output_signal = H.virtual("signal-each") }
+      ctx.source = H.source(ctx, 7.5, 1.5)
+      H.set_source(ctx.source, A, 7)
+      H.wire_input(ctx.source, ctx.v)
+      local pole = ctx.surface.create_entity({ name = "medium-electric-pole", force = "player",
+                                               position = { o.x + 4.5, o.y - 1.5 } })
+      ctx.v.get_wire_connector(defines.wire_connector_id.combinator_output_red, true)
+        .connect_to(pole.get_wire_connector(defines.wire_connector_id.circuit_red, true), false)
+    end,
+    steps = {
+      { ticks = 60, run = function(ctx) ctx.tick0 = H.state(ctx.p).tick end },
+      { ticks = 120, run = function(ctx)
+        local vanilla_works = H.output(ctx.v, A) == 7
+        local progressed = H.state(ctx.p).tick - ctx.tick0
+        if vanilla_works and progressed < 100 then
+          error("vanilla kombinátor při podpětí běží, Pythonator stojí (stav " .. ctx.p.status .. ", energie "
+            .. string.format("%.0f", ctx.p.energy) .. ")")
+        end
+        log("PYNTR-TEST INFO podpětí: vanilla " .. tostring(vanilla_works) .. ", Pythonator ticků " .. progressed .. "/120")
+      end },
+    },
+  },
+  {
+    name = "síť zůstane, ale zdroj zmizí: Pythonator stojí",
+    setup = function(ctx)
+      local o = ctx.origin
+      ctx.eei = ctx.surface.create_entity({ name = "electric-energy-interface", position = { o.x + 10, o.y + 10 },
+                                            force = "player" })
+      ctx.eei.power_production = 1e9
+      ctx.eei.electric_buffer_size = 1e10
+      ctx.surface.create_entity({ name = "substation", position = { o.x + 6, o.y + 6 }, force = "player" })
+      ctx.p = H.pythonator(ctx, 1, 1, "def loop():\n  out['signal-A'] = tick + 1")
+    end,
+    steps = {
+      { ticks = 30, run = function(ctx) ctx.eei.destroy() end },
+      { ticks = 200, run = function(ctx) ctx.tick = H.state(ctx.p).tick end },
+      { ticks = 120, run = function(ctx)
+        H.eq(H.state(ctx.p).tick, ctx.tick, "tick stojí (stav " .. ctx.p.status .. ")")
+        H.eq(H.state(ctx.p).led, "off", "LED zhasnutá")
+      end },
+    },
+  },
+  {
+    name = "1500 výstupních signálů (víc sekcí skrytého kombinátoru) projde bez zamrznutí",
+    requires = "quality",
+    setup = function(ctx)
+      H.power(ctx)
+      local keys, n = {}, 0
+      for name, item in pairs(prototypes.item) do
+        if not item.hidden and not item.parameter then
+          for _, q in ipairs({ "", "@uncommon", "@rare", "@epic", "@legendary" }) do
+            if n < 1500 then
+              n = n + 1
+              keys[n] = "'" .. name .. q .. "'"
+            end
+          end
+        end
+      end
+      ctx.n = n
+      ctx.p = H.pythonator(ctx, 1, 1, "K = [" .. table.concat(keys, ", ") .. "]\ndef loop():\n  for k in K:\n    out[k] = 1")
+    end,
+    steps = { { ticks = 5, run = function(ctx)
+      local s = H.state(ctx.p)
+      if s.error then error("chyba programu: " .. serpent.line(s.error)) end
+      local signals = ctx.p.get_signals(defines.wire_connector_id.combinator_output_red) or {}
+      H.eq(#signals, ctx.n, "počet signálů na drátě")
+    end } },
+  },
+  {
     name = "kvalita v klíči výstupu",
     requires = "quality",
     setup = function(ctx)

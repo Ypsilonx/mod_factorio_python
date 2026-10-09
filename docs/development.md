@@ -65,7 +65,16 @@
 - [ ] Vytěžit budovu → nezůstanou žádné skryté entity (Alt-mód, F4 → show-entity-info).
 
 ## Napájení
-Pythonator běží, jen když má v zásobníku energii aspoň na jeden tick (`entity.energy >= get_max_energy_usage`) – stejně jako vanilla kombinátor. Stav entity rozhodovat nemůže: po zbourání sloupu hlásí kombinátor napořád `low_power` a v zásobníku zůstane zbytek menší než spotřeba ticku (ověřeno sondou, Factorio 2.0.77).
+Pythonator běží, když má v zásobníku energii aspoň na jeden tick (`entity.energy >= get_max_energy_usage`), **nebo** když se energie od minulé kontroly změnila (`ctl.last_energy`, `scripts/scheduler.lua` `powered()`). Sonda (Factorio 2.0.77):
+
+| Situace | `energy` | `status` | Pythonator |
+|---|---|---|---|
+| dostatek proudu | ≥ spotřeba ticku | `working` | běží |
+| podpětí (zdroj dá ~polovinu) | kolísá pod spotřebou (820, 1240 …) | `low_power` | běží (119/120 ticků, jako vanilla kombinátor) |
+| zdroj zmizel, síť zůstala | stojí na zbytku (222) | `low_power` | stojí |
+| zbouraný sloup | stojí na zbytku (222) | `low_power` | stojí |
+
+Stav entity rozhodovat nemůže (`low_power` ve všech třech případech). Skok energie při výpadku pustí ještě jeden běh (dobíhá zásobník); první kontrola po postavení v podpětí nemá s čím srovnat, takže Pythonator začne až po 60 ticích.
 
 ## Kompatibilita (ověřeno 2026-10-09, Factorio 2.0.77)
 `bash tools/run-tests.sh mods …` – obecné kontroly z `cases/compat.lua` (entita, recept, výzkum, dostupnost surovin):
@@ -119,3 +128,10 @@ Skripty jsou zdroj pravdy, výstupy (PNG, `prototypes/graphics_data.lua`) se ru�
 - [ ] Dráty: červený/zelený se připojí na šroubky vstupní (u výstupu kombinátoru vstup = strana „vstupu“ při najetí myší) a výstupní svorkovnice ve všech směrech; stín drátu sedí.
 - [ ] Stavová LED: bez kódu zhasnutá, po nahrání kódu bliká zeleně, `stop` = žlutá, chyba = červená; po otočení budovy LED „sedí“ na objímce.
 - [ ] Ikona v inventáři, ve stromu výzkumu a thumbnail v seznamu modů.
+
+## Známá omezení a odložené drobnosti (review plánu 2)
+- Chyba uprostřed `loop()`: výstupy zapsané před chybou zůstanou v `ctl.out`, ale na drát se nepošlou – drát drží stav z posledního úspěšného běhu (GUI v plánu 3 má ukazovat stav drátu).
+- Undo zbourání (Ctrl+Z) vrátí budovu bez kódu – duch z undo nenese tagy (řešitelné přes undo-redo API 2.0).
+- Po načtení hry se každý program překládá zvlášť a všechny v prvním ticku (při stovkách budov krátké zaškobrtnutí).
+- `set_slot` skrytého výstupu vyvolá `on_entity_logistic_slot_changed` – mody, které ji poslouchají, platí za každou změnu výstupu.
+- Varianta testů `mods …` je jednofázová (bez uložení a načtení).

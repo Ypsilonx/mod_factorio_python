@@ -46,9 +46,12 @@ local function desired(both, single)
 end
 
 --- Sekce a slot v ní pro globální index slotu (sekce se přidávají podle potřeby).
+--- @return LuaLogisticSection|nil sekce (nil = hra další sekci nepřidá – výstupů je příliš mnoho)
 local function section_slot(cb, index)
   local s = math.floor((index - 1) / M.SECTION_SLOTS) + 1
-  while cb.sections_count < s do cb.add_section() end
+  while cb.sections_count < s do
+    if not cb.add_section() then return nil end
+  end
   return cb.get_section(s), (index - 1) % M.SECTION_SLOTS + 1
 end
 
@@ -70,7 +73,9 @@ local function flush_wire(out, state, want)
   end
   local res = resolver.get()
   for key, value in pairs(want) do
-    if state.sent[key] ~= value then
+    -- Klíč, který po změně modů neexistuje (odebraný nebo nejednoznačný signál), se přeskočí.
+    local sid = state.sent[key] ~= value and res:resolve(key)
+    if sid then
       cb = cb or out.get_or_create_control_behavior()
       local index = state.slot[key]
       if not index then
@@ -79,30 +84,37 @@ local function flush_wire(out, state, want)
           state.top = state.top + 1
           index = state.top
         end
-        state.slot[key] = index
       end
-      local sid = res:resolve(key)
       local section, slot = section_slot(cb, index)
+      if not section then
+        state.free[#state.free + 1] = index
+        return false
+      end
+      state.slot[key] = index
       section.set_slot(slot, { value = { type = sid.type, name = sid.name, quality = sid.quality, comparator = "=" },
                                min = value })
       state.sent[key] = value
     end
   end
+  return true
 end
 
 --- Zapíše výstupy kontroléru na dráty (jen změny proti minulému zápisu). Neplatný výstup se přeskočí –
 --- obnoví ho údržba budovy a stav jeho drátu se pak pošle celý znovu.
 --- @param ctl table kontrolér s ctl.outputs = { red, green } a ctl.out = { both, red, green }
+--- @return boolean false = výstupy se nevešly (hra nepřidala další sekci skrytého kombinátoru)
 function M.flush(ctl)
   ctl.wires = ctl.wires or {}
+  local ok = true
   for wire, out in pairs(ctl.outputs) do
     local state = ctl.wires[wire]
     if not state then
       state = { sent = {}, slot = {}, free = {}, top = 0 }
       ctl.wires[wire] = state
     end
-    if out.valid then flush_wire(out, state, desired(ctl.out.both, ctl.out[wire])) end
+    if out.valid and not flush_wire(out, state, desired(ctl.out.both, ctl.out[wire])) then ok = false end
   end
+  return ok
 end
 
 --- Konektory vstupních zdrojů programu.

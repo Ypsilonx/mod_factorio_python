@@ -25,7 +25,9 @@ end
 --- Shift+pravý/levý klik: zkopíruje kód (a běh/pauzu) z jedné budovy do druhé.
 --- @param event EventData.on_entity_settings_pasted
 function M.on_pasted(event)
-  if not (lifecycle.is_ours(event.source) and lifecycle.is_ours(event.destination)) then return end
+  if not lifecycle.is_ours(event.destination) then return end
+  lifecycle.clear_parameters(event.destination)
+  if not lifecycle.is_ours(event.source) then return end
   local src = controller.get(event.source.unit_number)
   local dst = controller.get(event.destination.unit_number)
   if src and dst and src.code ~= "" then lifecycle.load_code(dst, src.code, src.running) end

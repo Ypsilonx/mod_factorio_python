@@ -82,6 +82,45 @@ return {
     },
   },
   {
+    name = "klonování: klon má vlastní skryté výstupy a kód, po zbourání nic nezůstane",
+    setup = function(ctx)
+      ctx.p = H.pythonator(ctx, 1, 1, "x = 5\ndef loop(): pass")
+    end,
+    steps = {
+      { ticks = 2, run = function(ctx)
+        local o = ctx.origin
+        ctx.surface.clone_area({ source_area = { { o.x - 0.5, o.y - 0.5 }, { o.x + 2.5, o.y + 2.5 } },
+                                 destination_area = { { o.x + 7.5, o.y - 0.5 }, { o.x + 10.5, o.y + 2.5 } },
+                                 clone_entities = true, clone_tiles = false })
+        local clones = ctx.surface.find_entities_filtered({ name = H.DATA.entity, position = { o.x + 9, o.y + 1 }, radius = 1 })
+        H.eq(#clones, 1, "klon budovy")
+        ctx.clone = clones[1]
+        H.eq(H.hidden_count(ctx), 4, "2 + 2 skryté výstupy (klony zdroje zničeny, klon má nové)")
+        H.eq(H.state(ctx.clone).globals.x, "5", "kód klonu proběhl")
+      end },
+      { ticks = 2, run = function(ctx)
+        ctx.clone.destroy({ raise_destroy = true })
+        ctx.p.destroy({ raise_destroy = true })
+      end },
+      { ticks = 3, run = function(ctx) H.eq(H.hidden_count(ctx), 0, "nic nezůstalo") end },
+    },
+  },
+  {
+    name = "dvojí script_raised_built nezdvojí skryté výstupy, parametry kombinátoru se vynulují",
+    setup = function(ctx)
+      ctx.p = ctx.surface.create_entity({ name = H.DATA.entity, position = { ctx.origin.x + 1, ctx.origin.y + 1 },
+                                          force = "player" })
+      ctx.p.get_or_create_control_behavior().parameters = { first_signal = H.virtual("signal-each"),
+        second_constant = 1, operation = "*", output_signal = H.virtual("signal-each") }
+      script.raise_script_built({ entity = ctx.p })
+      script.raise_script_built({ entity = ctx.p })
+    end,
+    steps = { { ticks = 1, run = function(ctx)
+      H.eq(H.hidden_count(ctx), 2, "jen 2 skryté výstupy")
+      H.eq(ctx.p.get_or_create_control_behavior().parameters.first_signal, nil, "parametry vynulované")
+    end } },
+  },
+  {
     name = "stavová LED: běh bliká, pauza a chyba svítí, objekt LED existuje",
     setup = function(ctx)
       H.power(ctx)

@@ -2,6 +2,7 @@
 --- Přeložené instance programů jsou v cache mimo storage (funkce nejdou uložit); staví se líně při prvním
 --- použití, takže po načtení hry nebo připojení hráče vznikne na každém klientovi stejná instance bez initu.
 local compiler = require("scripts.lang.compiler")
+local errors = require("scripts.lang.errors")
 local signal_io = require("scripts.lang.signal_io")
 local vm = require("scripts.lang.vm")
 local resolver = require("scripts.resolver")
@@ -161,10 +162,14 @@ end
 
 --- Zapíše výstupy na dráty, pokud se změnily (zapisovací objekty hlásí `changed`) nebo `force`.
 --- Kontrolér bez skrytých výstupů (jednotkové testy) nic nezapisuje.
+--- @return boolean false = výstupy se nevešly do skrytého kombinátoru (stav CHYBA)
 local function flush(ctl, entry, force)
   local IO = entry.IO
-  if ctl.outputs and (force or IO.out.changed or IO.out_red.changed or IO.out_green.changed) then io.flush(ctl) end
+  local ok = true
+  if ctl.outputs and (force or IO.out.changed or IO.out_red.changed or IO.out_green.changed) then ok = io.flush(ctl) end
   IO.out.changed, IO.out_red.changed, IO.out_green.changed = nil, nil, nil
+  if not ok then ctl.error = errors.make(nil, nil, "too-many-outputs") end
+  return ok
 end
 
 --- Vyprázdní tabulky výstupů (tabulky zůstávají – drží je zapisovací objekty instance).
@@ -197,7 +202,7 @@ function M.set_code(ctl, source)
   for k in pairs(ctl.globals) do ctl.globals[k] = nil end
   clear_outputs(ctl)
   ctl.prints = {}
-  ctl.tick, ctl.last_run, ctl.memory_checked = 0, nil, 0
+  ctl.tick, ctl.last_run, ctl.memory_checked, ctl.resumed = 0, nil, 0, nil
   ctl.interval = program.config.interval
   ctl.outputs_mode = program.config.outputs
   ctl.running = true
@@ -221,14 +226,16 @@ function M.run_loop(ctl, game_tick, lost)
   if ctl.last_run then
     dt = game_tick - ctl.last_run
     ctl.tick = ctl.tick + dt - (lost or 0)
+  elseif ctl.resumed then
+    ctl.tick = ctl.tick + dt
   end
-  ctl.last_run = game_tick
+  ctl.last_run, ctl.resumed = game_tick, nil
   local IO = entry.IO
   IO.tick, IO.game_tick, IO.dt = ctl.tick, game_tick, dt
   for _, source in pairs(entry.sources) do source.reset(game_tick) end
   local cleared = ctl.outputs_mode == "clear" and clear_outputs(ctl)
   if not run(ctl, entry, "loop") then return false end
-  flush(ctl, entry, cleared)
+  if not flush(ctl, entry, cleared) then return false end
   if ctl.tick - ctl.memory_checked >= M.MEMORY_CHECK_TICKS then return check_memory(ctl) end
   return true
 end
@@ -239,9 +246,9 @@ end
 function M.reset(ctl)
   if ctl.code == "" then return false end
   local keep_running = ctl.running and not ctl.error
-  M.set_code(ctl, ctl.code)
+  local ok = M.set_code(ctl, ctl.code)
   ctl.running = keep_running and not ctl.error
-  return true
+  return ok
 end
 
 --- Krok: při pauze provede jeden loop(), jako by od minulého uběhl právě jeden interval.
@@ -264,8 +271,10 @@ end
 --- @return boolean
 function M.start(ctl)
   if ctl.error or ctl.code == "" then return false end
+  if ctl.running then return true end
   ctl.running = true
-  ctl.last_run = nil
+  -- dt po pauze = interval (pauza se do dt nepočítá); tick se při prvním běhu posune o interval
+  ctl.last_run, ctl.resumed = nil, true
   return true
 end
 

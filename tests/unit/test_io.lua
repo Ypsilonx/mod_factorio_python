@@ -83,6 +83,20 @@ return {
     local red = ctl.outputs.red.signals()
     A.eq(red["x1500"], 1500, "poslední signál")
   end },
+  { "neexistující signál (odebraný mod) se při zápisu přeskočí, ostatní projdou", function()
+    local io, ctl = setup()
+    ctl.out.both["zmizely-signal"], ctl.out.both["signal-A"] = 3, 4
+    A.eq(io.flush(ctl), true, "bez pádu")
+    A.eq(ctl.outputs.red.signals()["signal-A"], 4, "platný signál")
+    A.eq(ctl.outputs.red.signals()["zmizely-signal"], nil, "neplatný přeskočen")
+  end },
+  { "hra nepřidá další sekci → flush vrátí false", function()
+    local io, ctl = setup()
+    io.SECTION_SLOTS = 1
+    ctl.outputs.red, ctl.outputs.green = G.output(1), G.output(1)
+    ctl.out.both["signal-A"], ctl.out.both["signal-B"] = 1, 2
+    A.eq(io.flush(ctl), false, "nevešlo se")
+  end },
   { "neplatný výstup (zničený jiným modem) se přeskočí", function()
     local io, ctl = setup()
     ctl.outputs.red.valid = false

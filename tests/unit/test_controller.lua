@@ -56,7 +56,7 @@ return {
     A.eq(R.repr(ctl.globals.log), "[(0, 100, 5), (5, 105, 5), (12, 112, 7)]", "log")
     A.eq(ctl.interval, 5, "interval z config()")
   end },
-  { "stop: tick stojí, po startu dt = interval", function()
+  { "stop: tick stojí, po startu se posune o interval (neopakuje se), dt = interval", function()
     local controller, ctl = setup()
     load(controller, ctl, "log = []\ndef loop():\n  log.append((tick, dt))")
     controller.run_loop(ctl, 10)
@@ -66,7 +66,7 @@ return {
     controller.start(ctl)
     controller.run_loop(ctl, 50)
     local R = require("scripts.lang.builtins")
-    A.eq(R.repr(ctl.globals.log), "[(0, 1), (1, 1), (1, 1)]", "log")
+    A.eq(R.repr(ctl.globals.log), "[(0, 1), (1, 1), (2, 1)]", "log")
   end },
   { "vstupy z drátů: inp = červený + zelený, red/green zvlášť", function()
     local controller, ctl, entity = setup()
@@ -223,6 +223,24 @@ return {
     local calls = ctl.outputs.red.calls
     controller.run_loop(ctl, 4)
     A.eq(ctl.outputs.red.calls, calls, "stejná hodnota = žádné volání")
+  end },
+  { "play na běžícím programu nic nemění", function()
+    local controller, ctl = setup()
+    load(controller, ctl, "log = []\ndef loop():\n  log.append(tick)")
+    controller.run_loop(ctl, 1)
+    controller.start(ctl)
+    controller.run_loop(ctl, 2)
+    local R = require("scripts.lang.builtins")
+    A.eq(R.repr(ctl.globals.log), "[0, 1]", "tick")
+  end },
+  { "příliš mnoho výstupů: stav CHYBA místo zamrznutí", function()
+    local controller, ctl = setup()
+    local io = require("scripts.io")
+    io.SECTION_SLOTS = 1
+    ctl.outputs = { red = G.output(1), green = G.output(1) }
+    load(controller, ctl, "def loop():\n  out['signal-A'] = 1\n  out['signal-B'] = 2")
+    A.eq(controller.run_loop(ctl, 1), false, "chyba")
+    A.eq(ctl.error and ctl.error.key, "pyntr-err.too-many-outputs", "klíč")
   end },
   { "reset bez kódu nic nedělá", function()
     local controller, ctl = setup()

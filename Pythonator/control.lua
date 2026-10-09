@@ -42,6 +42,9 @@ for _, id in ipairs({
   script.on_event(id, function(event) lifecycle.remove(event.entity.unit_number) end, FILTERS)
 end
 
+script.on_event(defines.events.on_entity_cloned, lifecycle.on_cloned,
+  { { filter = "name", name = lifecycle.DATA.entity }, { filter = "name", name = lifecycle.DATA.output } })
+
 -- Smrt: až po vzniku ducha, aby do něj šel zapsat kód.
 script.on_event(defines.events.on_post_entity_died, lifecycle.on_post_died,
   { { filter = "type", type = "arithmetic-combinator" } })

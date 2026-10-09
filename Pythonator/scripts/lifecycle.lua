@@ -39,11 +39,34 @@ end
 --- @param entity LuaEntity
 --- @param tags table|nil
 function M.on_built(entity, tags)
-  if not M.is_ours(entity) then return end
+  -- Jiný mod může vyvolat script_raised_built pro už evidovanou budovu – druhé skryté výstupy by zůstaly viset.
+  if not M.is_ours(entity) or controller.get(entity.unit_number) then return end
+  M.clear_parameters(entity)
   local ctl = controller.create(entity)
   ctl.outputs = io.attach_outputs(entity, M.DATA.output)
   script.register_on_object_destroyed(entity)
   if tags and tags[M.TAG_CODE] then M.load_code(ctl, tags[M.TAG_CODE], tags[M.TAG_RUNNING] ~= false) end
+end
+
+--- Vynuluje parametry aritmetického kombinátoru (blueprint z importu nebo vložení z vanilla kombinátoru by
+--- jinak budově vrátil vlastní výpočet na výstup).
+function M.clear_parameters(entity)
+  entity.get_or_create_control_behavior().parameters = {}
+end
+
+--- Klonování (editor, mody přesouvající stavby): klon skrytého výstupu se zničí, klon budovy dostane vlastní
+--- skryté výstupy a kód zdroje (jako z blueprintu – stav se nepřenáší).
+--- @param event EventData.on_entity_cloned
+function M.on_cloned(event)
+  local dst, src = event.destination, event.source
+  if not dst.valid then return end
+  if dst.name == M.DATA.output then
+    dst.destroy()
+    return
+  end
+  local ctl = src.valid and controller.get(src.unit_number)
+  local tags = ctl and ctl.code ~= "" and { [M.TAG_CODE] = ctl.code, [M.TAG_RUNNING] = ctl.running } or nil
+  M.on_built(dst, tags)
 end
 
 --- Odstraní stav a skryté výstupy kontroléru (jakákoli cesta zániku budovy).

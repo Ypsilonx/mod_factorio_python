@@ -21,6 +21,7 @@ end
 remote.add_interface("pyntr", {
   --- Nahraje kód a spustí ho od nuly. @return boolean ok, table|nil chyba překladu
   set_code = function(unit, source)
+    if type(source) ~= "string" then error("set_code: kód musí být řetězec") end
     return lifecycle.load_code(get(unit), source)
   end,
 

@@ -28,7 +28,7 @@ end
 --- @param unit integer unit_number
 --- @return table entita; `red`/`green` = { "jméno" = hodnota } (jen item/virtual s kvalitou normal)
 function M.entity(unit)
-  local e = { unit_number = unit, valid = true, red = {}, green = {}, status = 1, energy = 1000,
+  local e = { unit_number = unit, valid = true, red = {}, green = {}, status = 1, energy = 1000, electric_network_id = 1,
               prototype = { get_max_energy_usage = function() return 833 end } }
   --- Signály drátu podle id konektoru.
   local function wire(id) return id == 1 and e.red or id == 2 and e.green or {} end
@@ -58,10 +58,12 @@ function M.entity(unit)
 end
 
 --- Falešný skrytý konstantní kombinátor, který počítá volání API.
-function M.output()
+--- @param max_sections integer|nil kolik sekcí hra dovolí (nil = neomezeně)
+function M.output(max_sections)
   local o = { valid = true, calls = 0, sections = {} }
   local cb = { sections_count = 0 }
   function cb.add_section()
+    if max_sections and cb.sections_count >= max_sections then return nil end
     cb.sections_count = cb.sections_count + 1
     local section = { slots = {} }
     function section.set_slot(i, filter) o.calls = o.calls + 1; section.slots[i] = filter end
