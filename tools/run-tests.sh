@@ -5,6 +5,8 @@
 #          tools/run-tests.sh mods <mod> [<mod>…]   kompatibilita s jinými mody (např. pymodpack, boblogistics):
 #            mody i jejich povinné závislosti se vezmou v nejvyšší verzi ze složky MODS_SOURCE
 #            (výchozí %APPDATA%/Factorio/mods) a spustí se jen obecné kontroly z cases/compat.lua.
+# Varianty vanilla/space-age běží dvoufázově: 1) headless server (jen 127.0.0.1) do uložení hry v ticku
+# runner.SAVE_TICK, 2) --benchmark uložené pozice – testy tak přejdou přes skutečné uložení a načtení.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 FACTORIO="${FACTORIO_EXE:-C:/STEAM/steamapps/common/Factorio/bin/x64/factorio.exe}"
@@ -18,6 +20,8 @@ rm -rf "$RUN"
 mkdir -p "$RUN/mods" "$RUN/write-data"
 cp -r "$ROOT/Pythonator" "$RUN/mods/Pythonator"
 cp -r "$ROOT/tests/pythonator-tests" "$RUN/mods/pythonator-tests"
+# Konformní programy jazyka jako data pro test ve hře (generovaný soubor jen v běhu, ne v repozitáři).
+(cd "$ROOT" && lua tools/conformance-data.lua) > "$RUN/mods/pythonator-tests/conformance_data.lua"
 
 declare -A BUILTIN=([base]=true [elevated-rails]=false [quality]=false [space-age]=false)
 EXTRA=()
@@ -80,6 +84,31 @@ if [ ! -f "$RUN/test.zip" ]; then
   grep -A12 -E "Error|error" "$RUN/create.log" | head -40
   exit 1
 fi
-"$FACTORIO" "${ARGS[@]}" --benchmark "$RUN_W/test.zip" --benchmark-ticks 1500 --disable-audio > "$RUN/bench.log" 2>&1 || true
-grep -E "PYNTR-TEST|Error" "$RUN/bench.log" | sed 's/.*PYNTR-TEST/PYNTR-TEST/'
+BENCH_SAVE="$RUN_W/test.zip"
+: > "$RUN/server.log"
+if [ "$VARIANT" != "mods" ]; then
+  # Fáze 1: server bez hráčů (auto_pause vypnuté) dojede do uložení, pak se ukončí.
+  sed -e 's/"auto_pause": true/"auto_pause": false/' -e 's/"public": true/"public": false/' \
+      -e 's/"lan": true/"lan": false/' -e 's/"require_user_verification": true/"require_user_verification": false/' \
+      -e 's/"autosave_interval": [0-9]*/"autosave_interval": 0/' \
+      "$(dirname "$FACTORIO")/../../data/server-settings.example.json" > "$RUN/server-settings.json"
+  "$FACTORIO" "${ARGS[@]}" --start-server "$RUN_W/test.zip" --server-settings "$RUN_W/server-settings.json" \
+    --bind 127.0.0.1:34297 > "$RUN/server.log" 2>&1 &
+  SERVER=$!
+  for _ in $(seq 1 240); do
+    grep -q "Saving finished" "$RUN/server.log" && break
+    kill -0 "$SERVER" 2>/dev/null || break
+    sleep 0.5
+  done
+  kill "$SERVER" 2>/dev/null || true
+  wait "$SERVER" 2>/dev/null || true
+  if ! grep -q "Saving finished" "$RUN/server.log"; then
+    echo "Fáze 1 (server) hru neuložila:"
+    grep -E "PYNTR-TEST|Error" "$RUN/server.log" | head -20
+    exit 1
+  fi
+  BENCH_SAVE="$RUN_W/write-data/saves/_autosave-pyntr-saved.zip"
+fi
+"$FACTORIO" "${ARGS[@]}" --benchmark "$BENCH_SAVE" --benchmark-ticks 1500 --disable-audio > "$RUN/bench.log" 2>&1 || true
+cat "$RUN/server.log" "$RUN/bench.log" | grep -E "PYNTR-TEST|Error" | sed 's/.*PYNTR-TEST/PYNTR-TEST/'
 grep -q "PYNTR-TEST DONE pass=[0-9]* fail=0 " "$RUN/bench.log"

@@ -2,6 +2,21 @@
 --- Výsledky jdou do logu s prefixem PYNTR-TEST, souhrn řádkem „PYNTR-TEST DONE pass=… fail=… skip=…“.
 local M = {}
 
+--- V tomto ticku se hra uloží (tools/run-tests.sh pak server ukončí a testy doběhnou po načtení uložené
+--- pozice – každý test, který běží déle, tak přejde přes skutečné uložení a načtení).
+M.SAVE_TICK = 60
+--- Jméno automatického uložení (soubor _autosave-<jméno>.zip ve write-data/saves).
+M.SAVE_NAME = "pyntr-saved"
+
+--- Byla hra v tomto běhu načtena z uložené pozice? (on_load; v upvalue, storage měnit nesmí.)
+local loaded = false
+
+--- Načtení z uložené pozice (script.on_load).
+function M.on_load() loaded = true end
+
+--- Proběhlo v tomto běhu načtení uložené hry?
+function M.was_loaded() return loaded end
+
 --- Registrované testy (definované v kódu, ve storage je jen jejich stav podle indexu).
 local cases = {}
 
@@ -44,6 +59,7 @@ end
 
 --- Spustí kroky, které jsou v tomto ticku na řadě; po dokončení všech testů zaloguje souhrn.
 function M.on_tick(event)
+  if event.tick == M.SAVE_TICK then game.auto_save(M.SAVE_NAME) end
   if storage.finished then return end
   local all_done = true
   for _, state in ipairs(storage.tests) do

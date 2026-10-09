@@ -18,7 +18,7 @@
 ## Testy
 - `bash tools/run-unit.sh` – jednotkové + konformní testy.
 - `bash tools/gen-conformance.sh` – přegenerování `.out` v CPythonu (jen při změně případů).
-- `bash tools/run-tests.sh vanilla|space-age` – integrační testy v headless Factoriu (testovací mod `tests/pythonator-tests/`, běh v `.test-run/`).
+- `bash tools/run-tests.sh vanilla|space-age` – integrační testy v headless Factoriu (testovací mod `tests/pythonator-tests/`, běh v `.test-run/`). Běží dvoufázově: headless server (jen 127.0.0.1:34297) dojede do uložení hry v ticku `SAVE_TICK` (`tests/pythonator-tests/runner.lua`), pak se uložená pozice načte v `--benchmark` – všechny delší testy tak přejdou přes skutečné uložení a načtení. Konformní programy jazyka se do testovacího modu generují (`tools/conformance-data.lua`) a běží ve hře na Lua 5.2.
 - `bash tools/run-tests.sh mods <mod>…` – kompatibilita s cizími mody ze `%APPDATA%/Factorio/mods`.
 - `bash tools/link-mod.sh` – propojí `Pythonator/` do složky modů hry (junction) pro ruční zkoušení.
 
