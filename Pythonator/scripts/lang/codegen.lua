@@ -31,7 +31,8 @@ end
 local function num(v)
   if v == math.huge then return "(1/0)" end
   if v == math.floor(v) and math.abs(v) < 2 ^ 53 then return string.format("%d", v) end
-  return string.format("%.17g", v)
+  -- locale s desetinnou čárkou (cs) by printf psal "2,5" = dvě hodnoty v Lua
+  return (string.format("%.17g", v):gsub(",", "."))
 end
 
 --- Výraz Lua pro čtení/zápis jména.
@@ -39,6 +40,16 @@ function Gen:name(id)
   if self.fn and self.fn.locals[id] then return "l_" .. id end
   if checker.READONLY[id] or checker.SIGNAL_OBJS[id] then return "IO." .. id end
   return string.format("G[%q]", id)
+end
+
+--- Hodnota výrazu, která se ukládá nebo předává dál: holé jméno (kromě parametru a IO) se ověří,
+--- že je přiřazené – jinak by nil tiše skončil v proměnné, seznamu nebo argumentu.
+function Gen:val(e)
+  if e.k == "Name" and not checker.READONLY[e.id] and not checker.SIGNAL_OBJS[e.id]
+    and not (self.params and self.params[e.id]) then
+    return "nn(" .. self:name(e.id) .. ")"
+  end
+  return self:ex(e)
 end
 
 --- Jedno porovnání a op b jako Lua boolean.
@@ -88,7 +99,7 @@ end
 --- Volání funkce (uživatelské, print, vestavěné).
 function Gen:call(e)
   local args = {}
-  for i, a in ipairs(e.args) do args[i] = self:ex(a) end
+  for i, a in ipairs(e.args) do args[i] = self:val(a) end
   local list = table.concat(args, ", ")
   if self.info.functions[e.func] then return "f_" .. e.func .. "(" .. list .. ")" end
   if e.func == "print" then return "print_(" .. list .. ")" end
@@ -106,21 +117,21 @@ function Gen:ex(e)
   if k == "BinOp" then return BINOP[e.op] .. "(" .. self:ex(e.left) .. ", " .. self:ex(e.right) .. ")" end
   if k == "UnaryOp" then return UNOP[e.op] .. "(" .. self:ex(e.operand) .. ")" end
   if k == "BoolOp" then
-    local acc = self:ex(e.values[#e.values])
+    local acc = self:val(e.values[#e.values])
     for i = #e.values - 1, 1, -1 do
-      acc = (e.op == "and" and "and_" or "or_") .. "(" .. self:ex(e.values[i]) .. ", function() return " .. acc .. " end)"
+      acc = (e.op == "and" and "and_" or "or_") .. "(" .. self:val(e.values[i]) .. ", function() return " .. acc .. " end)"
     end
     return acc
   end
   if k == "Compare" then return "(" .. self:compare(e) .. ")" end
   if k == "IfExp" then
-    return "(function() if " .. self:cond(e.test) .. " then return " .. self:ex(e.body)
-      .. " end return " .. self:ex(e.orelse) .. " end)()"
+    return "(function() if " .. self:cond(e.test) .. " then return " .. self:val(e.body)
+      .. " end return " .. self:val(e.orelse) .. " end)()"
   end
   if k == "Call" then return self:call(e) end
   if k == "Method" then
     local args = { self:ex(e.obj), string.format("%q", e.name) }
-    for _, a in ipairs(e.args) do args[#args + 1] = self:ex(a) end
+    for _, a in ipairs(e.args) do args[#args + 1] = self:val(a) end
     return "method(" .. table.concat(args, ", ") .. ")"
   end
   if k == "Subscript" then return "getitem(" .. self:ex(e.value) .. ", " .. self:ex(e.index) .. ")" end
@@ -130,14 +141,14 @@ function Gen:ex(e)
   end
   if k == "List" or k == "Tuple" then
     local parts = {}
-    for i, v in ipairs(e.elts) do parts[i] = self:ex(v) end
+    for i, v in ipairs(e.elts) do parts[i] = self:val(v) end
     return (k == "List" and "list" or "tuple") .. "({" .. table.concat(parts, ", ") .. "}, " .. #parts .. ")"
   end
   if k == "Dict" then
     local parts = {}
     for i, key in ipairs(e.keys) do
       parts[#parts + 1] = self:ex(key)
-      parts[#parts + 1] = self:ex(e.values[i])
+      parts[#parts + 1] = self:val(e.values[i])
     end
     return "dict({" .. table.concat(parts, ", ") .. "}, " .. #parts .. ")"
   end
@@ -181,15 +192,15 @@ function Gen:stmt(s)
     if v.k == "Call" or v.k == "Method" then
       self:emit(self:ex(v))
     else
-      self:emit("do local _ = " .. self:ex(v) .. " end")
+      self:emit("do local _ = " .. self:val(v) .. " end")
     end
   elseif k == "Assign" then
     local t1 = s.targets[1]
     if #s.targets == 1 and t1.k ~= "Tuple" and t1.k ~= "List" then
-      self:assign(t1, self:ex(s.value))
+      self:assign(t1, self:val(s.value))
     else
       local t = self:tmp()
-      self:emit("do local " .. t .. " = " .. self:ex(s.value))
+      self:emit("do local " .. t .. " = " .. self:val(s.value))
       for _, target in ipairs(s.targets) do self:assign(target, t) end
       self:emit("end")
     end
@@ -232,7 +243,8 @@ function Gen:stmt(s)
     self:loop_body(s.body)
     self:emit("end end")
   elseif k == "Return" then
-    self:emit("do return " .. (s.value and self:ex(s.value) or "None") .. " end")
+    -- _ln vrátit na řádek volajícího, jinak by chyba po návratu ukazovala do volané funkce
+    self:emit("do local _r = " .. (s.value and self:val(s.value) or "None") .. "; _ln = _sl; return _r end")
   elseif k == "Break" then
     self:emit("do break end")
   elseif k == "Continue" then
@@ -251,8 +263,10 @@ function Gen:func(fn)
   self.fn = fn
   local params, is_param = {}, {}
   for i, p in ipairs(fn.params) do params[i] = "l_" .. p; is_param[p] = true end
+  self.params = is_param
   self:emit("f_" .. fn.node.name .. " = function(" .. table.concat(params, ", ") .. ")")
   self:emit(WD)
+  self:emit("local _sl = _ln")
   local locals = {}
   for name in pairs(fn.locals) do
     if not is_param[name] then locals[#locals + 1] = "l_" .. name end
@@ -260,9 +274,10 @@ function Gen:func(fn)
   table.sort(locals)
   if #locals > 0 then self:emit("local " .. table.concat(locals, ", ")) end
   self:stmts(fn.node.body)
+  self:emit("_ln = _sl")
   self:emit("return None")
   self:emit("end")
-  self.fn = nil
+  self.fn, self.params = nil, nil
 end
 
 --- Vygeneruje zdroj Lua: chunk vrací factory function(R, G, IO) → instance.
@@ -277,6 +292,7 @@ function M.generate(ast, info)
   self:emit("local _b, _ln = 0, 0")
   self:emit("local function wd() R.watchdog() end")
   self:emit("local function print_(...) IO.print(print_line(...)) return None end")
+  self:emit("local function nn(v) if v == nil then R.raise(\"unbound\") end return v end")
   local names = {}
   for _, s in ipairs(ast.body) do
     if s.k == "Def" then names[#names + 1] = "f_" .. s.name end
@@ -289,6 +305,7 @@ function M.generate(ast, info)
   self:stmts(ast.body)
   self:emit("end")
   self:emit("return { init = init, loop = f_loop, set_budget = function(n) _b = n end,"
+    .. " charge = function(n) _b = _b - n if _b < 0 then wd() end end,"
     .. " budget = function() return _b end, line = function() return _ln end }")
   self:emit("end")
   return table.concat(self.out, "\n")

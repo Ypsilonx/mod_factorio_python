@@ -22,7 +22,11 @@ end
 --- Pole hodnot z iterovatelného objektu.
 local function collect(v)
   local arr, n = {}, 0
-  for x in R.iter(v) do n = n + 1; arr[n] = x end
+  for x in R.iter(v) do
+    n = n + 1
+    arr[n] = x
+    R.charge(1)
+  end
   return arr, n
 end
 
@@ -73,7 +77,7 @@ function B.int(...)
   argc("int", select("#", ...), 1)
   local v = ...
   if type(v) == "string" then
-    local s = v:match("^%s*([%+%-]?%d+)%s*$")
+    local s = v:match("^[ \t\n\r]*([%+%-]?[0-9]+)[ \t\n\r]*$")
     if not s then raise("bad-int", R.repr(v)) end
     return tonumber(s)
   end
@@ -86,7 +90,7 @@ function B.float(...)
   argc("float", select("#", ...), 1)
   local v = ...
   if type(v) == "string" then
-    local x = tonumber(v:match("^%s*(.-)%s*$"))
+    local x = tonumber(v:match("^[ \t\n\r]*(.-)[ \t\n\r]*$"))
     if not x then raise("bad-float", R.repr(v)) end
     return x
   end
@@ -121,6 +125,7 @@ end
 function B.range(...)
   argc("range", select("#", ...), 1, 3)
   local first, last, step = R.range_bounds(...)
+  R.charge(math.floor((last - first) / step) + 1)
   local arr, n = {}, 0
   for i = first, last, step do n = n + 1; arr[n] = i end
   return R.list(arr, n)
@@ -131,13 +136,17 @@ function B.sum(...)
   argc("sum", n, 1, 2)
   local it, start = ...
   local total = (n == 2) and start or 0
-  for x in R.iter(it) do total = R.add(total, x) end
+  for x in R.iter(it) do
+    R.charge(1)
+    total = R.add(total, x)
+  end
   return total
 end
 
 function B.sorted(...)
   argc("sorted", select("#", ...), 1)
   local arr, n = collect((...))
+  R.charge(n)
   table.sort(arr, function(x, y) return R.cmp(x, y, "sorted") < 0 end)
   return R.list(arr, n)
 end
@@ -170,6 +179,7 @@ function LM.pop(l, n, i)
     if idx < 0 or idx >= l.n then raise("index-error") end
     idx = idx + 1
   end
+  R.charge(l.n - idx + 1)
   local v = table.remove(l, idx)
   l.n = l.n - 1
   return v
@@ -180,6 +190,7 @@ function LM.insert(l, n, i, x)
   local idx = int_of(i)
   if idx < 0 then idx = math.max(0, idx + l.n) end
   idx = math.min(idx, l.n)
+  R.charge(l.n - idx + 1)
   table.insert(l, idx + 1, x)
   l.n = l.n + 1
   return R.None
@@ -187,6 +198,7 @@ end
 
 function LM.index(l, n, x)
   argc("index", n, 1)
+  R.charge(l.n)
   for i = 1, l.n do if R.eq(l[i], x) then return i - 1 end end
   raise("not-in-list")
 end
@@ -216,6 +228,7 @@ end
 
 --- Seznam z klíčů dict převedených funkcí f(klíč).
 local function dict_list(d, f)
+  R.charge(#d.keys)
   local arr = {}
   for i, k in ipairs(d.keys) do arr[i] = f(k) end
   return R.list(arr, #d.keys)
@@ -248,8 +261,17 @@ local function strarg(name, v)
   return v
 end
 
-function SM.upper(s, n) argc("upper", n, 0); return s:upper() end
-function SM.lower(s, n) argc("lower", n, 0); return s:lower() end
+--- Jen ASCII písmena: toupper/tolower z C závisí na locale (cs mění i bajty nad 127).
+function SM.upper(s, n)
+  argc("upper", n, 0)
+  R.charge(#s)
+  return (s:gsub("[a-z]", string.upper))
+end
+function SM.lower(s, n)
+  argc("lower", n, 0)
+  R.charge(#s)
+  return (s:gsub("[A-Z]", string.lower))
+end
 
 function SM.startswith(s, n, p)
   argc("startswith", n, 1)
@@ -267,9 +289,11 @@ function SM.split(s, n, sep)
   argc("split", n, 0, 1)
   local arr = {}
   if n == 0 or getmetatable(sep) == R.NoneMT then
-    for w in s:gmatch("%S+") do arr[#arr + 1] = w end
+    R.charge(#s)
+    for w in s:gmatch("[^ \t\n\r\f\v]+") do arr[#arr + 1] = w end
   else
     sep = strarg("split", sep)
+    R.charge(#s)
     if sep == "" then raise("empty-sequence", "split") end
     local start = 1
     while true do
@@ -285,7 +309,12 @@ end
 function SM.join(s, n, it)
   argc("join", n, 1)
   local parts = {}
-  for x in R.iter(it) do parts[#parts + 1] = strarg("join", x) end
+  local total = 0
+  for x in R.iter(it) do
+    parts[#parts + 1] = strarg("join", x)
+    total = total + #x + #s
+  end
+  R.charge(total)
   return table.concat(parts, s)
 end
 
@@ -293,6 +322,7 @@ function SM.replace(s, n, old, new)
   argc("replace", n, 2)
   old, new = strarg("replace", old), strarg("replace", new)
   if old == "" then return s end
+  R.charge(#s)
   local out, start = {}, 1
   while true do
     local i, j = s:find(old, start, true)

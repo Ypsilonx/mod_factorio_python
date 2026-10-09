@@ -17,6 +17,28 @@ R.None = setmetatable({}, NoneMT)
 local function raise(key, ...) errors.raise(nil, nil, key, ...) end
 R.raise = raise
 
+--- Instance programu, která právě běží (nastavuje VM jen po dobu init/loop); platí za práci vestavěných funkcí.
+R.active = nil
+
+--- Započte n jednotek práce do rozpočtu watchdogu běžící instance (volat PŘED alokací výsledku).
+--- @param n number
+function R.charge(n)
+  local inst = R.active
+  if inst and n > 0 then inst.charge(n) end
+end
+local charge = R.charge
+
+--- Porovnání řetězců po bajtech (-1/0/1), nezávislé na locale (Lua `<` používá strcoll).
+local function strcmp(a, b)
+  if a == b then return 0 end
+  for i = 1, math.min(#a, #b) do
+    local x, y = a:byte(i), b:byte(i)
+    if x ~= y then return x < y and -1 or 1 end
+  end
+  return #a < #b and -1 or 1
+end
+R.strcmp = strcmp
+
 --- Jméno typu v Python stylu (pro hlášky); nil = proměnná před přiřazením.
 --- @return string
 function R.typename(v)
@@ -58,6 +80,7 @@ function R.dict_del(d, k)
   local kk = dkey(k)
   local v = d.vals[kk]
   if v == nil then return nil end
+  charge(#d.keys)
   d.vals[kk] = nil
   for i, key in ipairs(d.keys) do
     if dkey(key) == kk then table.remove(d.keys, i); break end
@@ -109,6 +132,7 @@ function R.not_(a) return not R.truthy(a) end
 
 --- Nová sekvence z prvků a a b.
 local function concat_seq(a, b, mt)
+  charge(a.n + b.n)
   local r = { n = a.n + b.n }
   for i = 1, a.n do r[i] = a[i] end
   for i = 1, b.n do r[a.n + i] = b[i] end
@@ -117,6 +141,7 @@ end
 
 --- Sekvence opakovaná n-krát.
 local function repeat_seq(s, n, mt)
+  charge(s.n * n)
   local r = { n = 0 }
   for _ = 1, n do
     for i = 1, s.n do r.n = r.n + 1; r[r.n] = s[i] end
@@ -127,7 +152,10 @@ end
 function R.add(a, b)
   local ta, tb = type(a), type(b)
   if ta == "number" and tb == "number" then return a + b end
-  if ta == "string" and tb == "string" then return a .. b end
+  if ta == "string" and tb == "string" then
+    charge(#a + #b)
+    return a .. b
+  end
   local x, y = numv(a), numv(b)
   if x and y then return x + y end
   local ma = getmetatable(a)
@@ -148,7 +176,10 @@ function R.mul(a, b)
   if x then seq, count = b, x end
   if count and count == math.floor(count) then
     count = math.max(0, count)
-    if type(seq) == "string" then return seq:rep(count) end
+    if type(seq) == "string" then
+      charge(#seq * count)
+      return seq:rep(count)
+    end
     local mt = getmetatable(seq)
     if mt == ListMT or mt == TupleMT then return repeat_seq(seq, count, mt) end
   end
@@ -231,16 +262,6 @@ function R.rshift(a, b)
   return signed(bit32.arshift(x, s))
 end
 
---- Porovnání řetězců po bajtech (-1/0/1), nezávislé na locale.
-local function strcmp(a, b)
-  if a == b then return 0 end
-  for i = 1, math.min(#a, #b) do
-    local x, y = a:byte(i), b:byte(i)
-    if x ~= y then return x < y and -1 or 1 end
-  end
-  return #a < #b and -1 or 1
-end
-
 --- Rovnost s Python sémantikou (Lua boolean).
 function R.eq(a, b)
   if a == nil or b == nil then raise("unbound") end
@@ -253,11 +274,13 @@ function R.eq(a, b)
   if ma == NoneMT then return true end
   if ma == ListMT or ma == TupleMT then
     if a.n ~= b.n then return false end
+    charge(a.n)
     for i = 1, a.n do if not R.eq(a[i], b[i]) then return false end end
     return true
   end
   if ma == DictMT then
     if #a.keys ~= #b.keys then return false end
+    charge(#a.keys)
     for _, k in ipairs(a.keys) do
       local bv = R.dict_get(b, k)
       if bv == nil or not R.eq(R.dict_get(a, k), bv) then return false end
@@ -276,6 +299,7 @@ function R.cmp(a, b, op)
   if type(a) == "string" and type(b) == "string" then return strcmp(a, b) end
   local ma = getmetatable(a)
   if (ma == ListMT or ma == TupleMT) and ma == getmetatable(b) then
+    charge(math.min(a.n, b.n))
     for i = 1, math.min(a.n, b.n) do
       local c = R.cmp(a[i], b[i], op)
       if c ~= 0 then return c end
@@ -306,10 +330,12 @@ end
 function R.contains(container, item)
   if type(container) == "string" then
     if type(item) ~= "string" then type_error("in", item, container) end
+    charge(#container)
     return container:find(item, 1, true) ~= nil
   end
   local mt = getmetatable(container)
   if mt == ListMT or mt == TupleMT then
+    charge(container.n)
     for i = 1, container.n do if R.eq(container[i], item) then return true end end
     return false
   end
@@ -333,12 +359,14 @@ local function fmt_num(x)
   if x == math.floor(x) and math.abs(x) < 1e16 then return string.format("%d", x) end
   local s
   for p = 1, 17 do
-    s = string.format("%." .. p .. "g", x)
+    -- s locale s desetinnou čárkou (cs) by printf psal "2,5"
+    s = string.format("%." .. p .. "g", x):gsub(",", ".")
     if tonumber(s) == x then break end
   end
   -- CRT na Windows píše exponent třemi číslicemi (1e+020); Python a ostatní platformy dvěma
   return (s:gsub("e([%+%-])0*(%d%d)", "e%1%2"))
 end
+R.fmt_num = fmt_num
 
 --- Řetězec v uvozovkách jako repr() v Pythonu.
 local function repr_str(s)
@@ -359,6 +387,7 @@ function R.repr(v)
   if mt == NoneMT then return "None" end
   if mt == ListMT or mt == TupleMT then
     local parts = {}
+    charge(v.n)
     for i = 1, v.n do parts[i] = R.repr(v[i]) end
     if mt == ListMT then return "[" .. table.concat(parts, ", ") .. "]" end
     if v.n == 1 then return "(" .. parts[1] .. ",)" end
@@ -366,6 +395,7 @@ function R.repr(v)
   end
   if mt == DictMT then
     local parts = {}
+    charge(#v.keys)
     for i, k in ipairs(v.keys) do parts[i] = R.repr(k) .. ": " .. R.repr(R.dict_get(v, k)) end
     return "{" .. table.concat(parts, ", ") .. "}"
   end
@@ -426,11 +456,13 @@ end
 function R.slice(o, lo, hi)
   if type(o) == "string" then
     local a, b = slice_bounds(lo, hi, #o)
+    charge(b - a + 1)
     return o:sub(a, b)
   end
   local mt = getmetatable(o)
   if mt == ListMT or mt == TupleMT then
     local a, b = slice_bounds(lo, hi, o.n)
+    charge(b - a + 1)
     local r = { n = 0 }
     for i = a, b do r.n = r.n + 1; r[r.n] = o[i] end
     return setmetatable(r, mt)
@@ -450,6 +482,7 @@ function R.iter(v)
   end
   if mt == DictMT then
     local ks, i = {}, 0
+    charge(#v.keys)
     for j, k in ipairs(v.keys) do ks[j] = k end
     return function() i = i + 1; return ks[i] end
   end

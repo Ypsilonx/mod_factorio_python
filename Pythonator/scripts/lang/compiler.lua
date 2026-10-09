@@ -19,11 +19,23 @@ function M.compile(source, resolver)
   end)
   if not ok then
     if errors.is(res) then return nil, res end
-    error(res, 0)
+    return nil, M.lua_failure(res)
   end
   local chunk, lerr = load(res.lua, "=pythonator", "t", {})
-  if not chunk then error("Pythonator: vygenerovaný kód nejde načíst: " .. tostring(lerr) .. "\n" .. res.lua, 0) end
+  if not chunk then return nil, M.lua_failure(lerr) end
   return { factory = chunk(), config = res.config, lua = res.lua }
+end
+
+--- Chyba jazyka z chyby Lua při překladu: limity Lua (hloubka, počet lokálních proměnných, registrů)
+--- jsou „příliš složitý program“, cokoli jiného je vnitřní chyba. Nikdy se nevyhazuje – hostitel by spadl.
+--- @param msg any chybová zpráva Lua
+--- @return table
+function M.lua_failure(msg)
+  msg = tostring(msg)
+  for _, pattern in ipairs({ "stack overflow", "C levels", "too many", "overflow" }) do
+    if msg:find(pattern, 1, true) then return errors.make(1, 1, "too-complex") end
+  end
+  return errors.make(1, 1, "internal", msg)
 end
 
 return M

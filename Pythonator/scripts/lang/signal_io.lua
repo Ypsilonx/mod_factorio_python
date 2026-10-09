@@ -34,7 +34,7 @@ local function pairs_of(obj)
   if getmetatable(obj) == ReaderMT then return obj.source.all() end
   local keys = {}
   for k in pairs(obj.store) do keys[#keys + 1] = k end
-  table.sort(keys)
+  table.sort(keys, function(a, b) return R.strcmp(a, b) < 0 end)
   local out = {}
   for i, k in ipairs(keys) do out[i] = { k, obj.store[k] } end
   return out
@@ -93,6 +93,8 @@ WriterMT.__setitem = function(obj, key, value)
   local c = canon(obj, key)
   local x = R.numv(value)
   if not x then R.raise("type-error", "=", "signal", R.typename(value)) end
+  -- NaN a nekonečno nemají celočíselnou hodnotu (Python: OverflowError), na drát nesmí
+  if x ~= x or x == math.huge or x == -math.huge then R.raise("overflow", R.str(x)) end
   x = R.wrap32(x >= 0 and math.floor(x) or math.ceil(x))
   if x == 0 then obj.store[c] = nil else obj.store[c] = x end
 end

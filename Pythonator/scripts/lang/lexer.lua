@@ -86,25 +86,25 @@ function M.tokenize(src)
 
   --- Přečte číslo (desítkové, hex, exponent, podtržítka).
   local function number(col)
-    local s = src:match("^0[xX]%x+", pos)
+    local s = src:match("^0[xX][0-9A-Fa-f]+", pos)
     local v
     if s then
       v = tonumber(s:sub(3), 16)
     else
-      s = src:match("^%d[%d_]*%.?[%d_]*", pos) or src:match("^%.%d[%d_]*", pos)
-      local ex = src:match("^[eE][%+%-]?%d+", pos + #s)
+      s = src:match("^[0-9][0-9_]*%.?[0-9_]*", pos) or src:match("^%.[0-9][0-9_]*", pos)
+      local ex = src:match("^[eE][%+%-]?[0-9]+", pos + #s)
       if ex then s = s .. ex end
       v = tonumber((s:gsub("_", "")))
     end
     local after = src:sub(pos + #s, pos + #s)
-    if not v or after:match("[%w_]") then errors.raise(line, col, "bad-number", s .. after) end
+    if not v or after:match("[A-Za-z0-9_]") then errors.raise(line, col, "bad-number", s .. after) end
     push("NUM", v, col)
     pos = pos + #s
   end
 
   --- Přečte jméno nebo klíčové slovo.
   local function word(col)
-    local w = src:match("^[%a_][%w_]*", pos)
+    local w = src:match("^[A-Za-z_][A-Za-z0-9_]*", pos)
     local nxt = src:sub(pos + #w, pos + #w)
     if (nxt == '"' or nxt == "'") and #w <= 2 and w:match("^[fFrRbBuU]+$") then
       errors.raise(line, col, "unsupported", w .. nxt .. "…" .. nxt)
@@ -116,12 +116,12 @@ function M.tokenize(src)
 
   --- Zkusí přečíst rich text tag signálu; vrátí true při úspěchu.
   local function tag(col)
-    local tt, nm, q = src:match("^%[([%w%-]+)=([%w%-_]+),quality=([%w%-_]+)%]", pos)
+    local tt, nm, q = src:match("^%[([A-Za-z0-9%-]+)=([A-Za-z0-9%-_]+),quality=([A-Za-z0-9%-_]+)%]", pos)
     local whole
     if tt then
       whole = "[" .. tt .. "=" .. nm .. ",quality=" .. q .. "]"
     else
-      tt, nm = src:match("^%[([%w%-]+)=([%w%-_]+)%]", pos)
+      tt, nm = src:match("^%[([A-Za-z0-9%-]+)=([A-Za-z0-9%-_]+)%]", pos)
       q = "normal"
       if tt then whole = "[" .. tt .. "=" .. nm .. "]" end
     end
@@ -160,9 +160,9 @@ function M.tokenize(src)
         pos = pos + 2; line = line + 1; lstart = pos
       elseif c == '"' or c == "'" then
         string_literal(c, col)
-      elseif c:match("%d") or (c == "." and src:sub(pos + 1, pos + 1):match("%d")) then
+      elseif c:match("[0-9]") or (c == "." and src:sub(pos + 1, pos + 1):match("[0-9]")) then
         number(col)
-      elseif c:match("[%a_]") then
+      elseif c:match("[A-Za-z_]") then
         word(col)
       elseif not (c == "[" and tag(col)) then
         operator(c, col)

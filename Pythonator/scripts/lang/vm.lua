@@ -22,7 +22,10 @@ end
 --- @return integer used spotřebované operace
 function M.run(inst, what, limit)
   inst.set_budget(limit)
+  local prev = R.active
+  R.active = inst
   local ok, e = pcall(inst[what])
+  R.active = prev
   local used = limit - inst.budget()
   if ok then return true, nil, used end
   if errors.is(e) then
@@ -33,38 +36,52 @@ function M.run(inst, what, limit)
   return false, errors.make(inst.line(), nil, "internal", tostring(e)), used
 end
 
---- Spočítá prvky kontejnerů v globálech; cykly a sdílené reference jednou.
+--- Velikost hodnoty pro pojistku paměti: prvky kontejnerů a řetězce podle délky (1 + délka // 100).
+--- Prochází iterativně (hluboké vnoření nepřeteče zásobník); tabulky v seen se nepočítají znovu.
+--- @param root any
+--- @param seen table již započtené tabulky (sdílené přes všechny globály)
+--- @param budget integer kolik ještě zbývá do limitu – nad ním se končí
+--- @return integer
+local function size_of(root, seen, budget)
+  local n, stack = 0, { root }
+  while #stack > 0 do
+    local v = stack[#stack]
+    stack[#stack] = nil
+    local t = type(v)
+    if t == "string" then
+      n = n + 1 + math.floor(#v / 100)
+    elseif t == "table" and not seen[v] then
+      seen[v] = true
+      local mt = getmetatable(v)
+      if mt == R.ListMT or mt == R.TupleMT then
+        n = n + v.n
+        for i = 1, v.n do stack[#stack + 1] = v[i] end
+      elseif mt == R.DictMT then
+        n = n + #v.keys
+        for _, k in ipairs(v.keys) do
+          stack[#stack + 1] = k
+          stack[#stack + 1] = R.dict_get(v, k)
+        end
+      end
+    end
+    if n > budget then return n end
+  end
+  return n
+end
+
+--- Spočítá velikost globálů; cykly a sdílené reference jednou.
 --- @param G table
 --- @param limit integer
 --- @return integer total
 --- @return string|nil biggest jméno největšího globálu, pokud total > limit
 function M.memory(G, limit)
   local seen, total = {}, 0
-  local function count(v)
-    if type(v) ~= "table" or seen[v] then return 0 end
-    seen[v] = true
-    local mt, n = getmetatable(v), 0
-    if mt == R.ListMT or mt == R.TupleMT then
-      n = v.n
-      for i = 1, v.n do
-        n = n + count(v[i])
-        if total + n > limit then return n end
-      end
-    elseif mt == R.DictMT then
-      n = #v.keys
-      for _, k in ipairs(v.keys) do
-        n = n + count(R.dict_get(v, k))
-        if total + n > limit then return n end
-      end
-    end
-    return n
-  end
   local names = {}
   for name in pairs(G) do names[#names + 1] = name end
-  table.sort(names)
+  table.sort(names, function(a, b) return R.strcmp(a, b) < 0 end)
   local biggest, bsize = nil, -1
   for _, name in ipairs(names) do
-    local n = count(G[name])
+    local n = size_of(G[name], seen, limit - total)
     total = total + n
     if n > bsize then biggest, bsize = name, n end
     if total > limit then return total, biggest end

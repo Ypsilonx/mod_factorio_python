@@ -25,9 +25,9 @@ for _, t in ipairs(M.PLAIN_TYPES) do IS_PLAIN[t] = true end
 --- @return string name
 --- @return string quality ("normal", pokud chybí)
 function M.split(key)
-  local stype, rest = key:match("^([%w%-]+):(.+)$")
+  local stype, rest = key:match("^([A-Za-z0-9%-]+):(.+)$")
   if not (stype and IS_TYPE[stype]) then stype, rest = nil, key end
-  local name, quality = rest:match("^(.+)@([%w%-_]+)$")
+  local name, quality = rest:match("^(.+)@([A-Za-z0-9%-_]+)$")
   if not name then name, quality = rest, "normal" end
   return stype, name, quality
 end
@@ -58,6 +58,15 @@ local function distance(a, b)
   return prev[#b]
 end
 
+--- Je a před b po bajtech? (Lua `<` na řetězcích používá strcoll, který závisí na locale.)
+local function byte_less(a, b)
+  for i = 1, math.min(#a, #b) do
+    local x, y = a:byte(i), b:byte(i)
+    if x ~= y then return x < y end
+  end
+  return #a < #b
+end
+
 --- Nejbližší jméno z množin kandidátů, pokud je dost blízko (deterministicky při shodě).
 --- @return string|nil
 local function suggest(name, sets)
@@ -65,7 +74,7 @@ local function suggest(name, sets)
   for _, set in ipairs(sets) do
     for cand in pairs(set) do
       local d = distance(name, cand)
-      if not bestd or d < bestd or (d == bestd and cand < best) then best, bestd = cand, d end
+      if not bestd or d < bestd or (d == bestd and byte_less(cand, best)) then best, bestd = cand, d end
     end
   end
   if best and bestd <= math.max(2, math.floor(#name / 3)) then return best end
