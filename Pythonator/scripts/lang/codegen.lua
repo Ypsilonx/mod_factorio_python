@@ -367,7 +367,7 @@ function M.generate(ast, info)
   self:emit("local function init()")
   self:stmts(ast.body)
   self:emit("end")
-  self:emit("return { init = init, loop = f_loop, set_budget = function(n) _b = n end,"
+  self:emit("return { init = init, loop = f_loop, globals = G, io = IO, set_budget = function(n) _b = n end,"
     .. " charge = function(n) _b = _b - n if _b < 0 then wd() end end,"
     .. " budget = function() return _b end, line = function() return _ln end }")
   self:emit("end")

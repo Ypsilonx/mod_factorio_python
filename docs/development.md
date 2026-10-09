@@ -33,6 +33,7 @@
 | Výzkum: povinné prerekvizity, věda navíc, cena | `EXTRA_TECHS`, `EXTRA_PACKS`, `COUNT_MULTIPLIER` v `Pythonator/prototypes/research.lua` | circuit-network; modrá věda; 1,5× nejdražší prerekvizita |
 | Opakování pokusu bez proudu | `POWER_RETRY_TICKS` v `Pythonator/scripts/scheduler.lua` | 60 ticků |
 | Délka logu print() / interval kontroly paměti | `PRINT_LINES`, `MEMORY_CHECK_TICKS` v `Pythonator/scripts/controller.lua` | 50 řádků / 60 ticků |
+| Největší zpoždění `delay()` (velikost bufferu) | `DELAY_MAX` v `Pythonator/scripts/lang/elements.lua` | 1000 volání |
 
 ## Známé odchylky od Pythonu
 - `int` a `float` se nerozlišují: `6 / 2` vypíše `3`, ne `3.0`; čísla nad 2^53 ztrácí přesnost.

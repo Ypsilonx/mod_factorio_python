@@ -8,7 +8,7 @@ local M = {}
 M.SIGNAL_OBJS = { inp = "r", red = "r", green = "r", out = "w", out_red = "w", out_green = "w" }
 M.READONLY = { tick = true, game_tick = true, dt = true }
 M.BUILTINS = {}
-for w in ("abs min max round int float str bool len range sum sorted print"):gmatch("%S+") do M.BUILTINS[w] = true end
+for w in ("abs min max round int float str bool len range sum sorted print latch timer edge counter delay pid"):gmatch("%S+") do M.BUILTINS[w] = true end
 
 --- Platné operátory vektorových metod (sdílené s runtime, viz scripts/lang/vector.lua).
 local VECTOR_OPS = { each = vector.ARITH_OPS, where = vector.COMPARE_OPS, count = vector.COMPARE_OPS }

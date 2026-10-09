@@ -3,6 +3,7 @@
 local controller = require("scripts.controller")
 local lifecycle = require("scripts.lifecycle")
 local R = require("scripts.lang.builtins")
+local elements = require("scripts.lang.elements")
 
 --- Kontrolér podle unit_number, jinak chyba volání.
 local function get(unit)
@@ -29,7 +30,10 @@ remote.add_interface("pyntr", {
   get_state = function(unit)
     local ctl = get(unit)
     local globals = {}
-    for name, value in pairs(ctl.globals) do globals[name] = R.repr(value) end
+    -- stav prvků knihovny ("#lib") není proměnná programu
+    for name, value in pairs(ctl.globals) do
+      if name ~= elements.STATE then globals[name] = R.repr(value) end
+    end
     return {
       code = ctl.code, running = ctl.running, error = ctl.error, compile_error = ctl.compile_error,
       tick = ctl.tick, interval = ctl.interval, used = ctl.used, globals = globals, led = ctl.led_state,

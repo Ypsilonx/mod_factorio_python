@@ -1,6 +1,8 @@
 --- Běh programu: instance nad globály, spuštění s watchdogem, převod chyb, pojistka paměti.
 local errors = require("scripts.lang.errors")
 local R = require("scripts.lang.builtins")
+-- Stavové prvky knihovny kombinátorů se registrují do R.builtins.
+require("scripts.lang.elements")
 
 local M = {}
 
@@ -61,6 +63,12 @@ local function size_of(root, seen, budget)
         for _, k in ipairs(v.keys) do
           stack[#stack + 1] = k
           stack[#stack + 1] = R.dict_get(v, k)
+        end
+      elseif mt == nil then
+        -- stav prvků knihovny ("#lib"): obyčejné tabulky, každé pole = 1 prvek
+        for _, x in pairs(v) do
+          n = n + 1
+          stack[#stack + 1] = x
         end
       end
     end

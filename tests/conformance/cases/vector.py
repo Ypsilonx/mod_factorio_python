@@ -1,5 +1,5 @@
-# ticks: 3
-# Knihovna kombinátorů: vektorové operace (out_red slouží jako sada vstupních signálů).
+# ticks: 2
+# Knihovna kombinátorů: vektorové operace (out_red slouží jako sada vstupních signálů). Ve hře se drží jen 50 řádků print().
 
 
 def show(label, d):

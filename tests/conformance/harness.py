@@ -112,6 +112,75 @@ class Signals(dict):
             self[k] = self[k] + x
 
 
+class Elements:
+    """Stavové prvky knihovny kombinátorů (stav pod jménem, dt čte z jmenného prostoru programu)."""
+
+    def __init__(self, ns: dict):
+        self.ns = ns
+        self.state = {}
+
+    def _get(self, name, kind):
+        """Stav prvku; jiný druh pod stejným jménem je chyba."""
+        s = self.state.setdefault(name, {"kind": kind})
+        if s["kind"] != kind:
+            raise ValueError(f"element {name} is {s['kind']}")
+        return s
+
+    def latch(self, name, set_, reset):
+        s = self._get(name, "latch")
+        if reset:
+            s["q"] = False
+        elif set_:
+            s["q"] = True
+        return s.get("q", False)
+
+    def timer(self, name, period):
+        s = self._get(name, "timer")
+        s["acc"] = s.get("acc", 0) + self.ns["dt"]
+        if s["acc"] >= period:
+            s["acc"] %= period
+            return True
+        return False
+
+    def edge(self, name, value):
+        s = self._get(name, "edge")
+        now, prev = bool(value), s.get("prev", False)
+        s["prev"] = now
+        return 1 if now and not prev else -1 if prev and not now else 0
+
+    def counter(self, name, step=1, reset=False):
+        s = self._get(name, "counter")
+        s["value"] = 0 if reset else s.get("value", 0) + step
+        return s["value"]
+
+    def delay(self, name, value, n):
+        s = self._get(name, "delay")
+        if s.get("n") != n:
+            s.update(n=n, buf=[None] * n, pos=0)
+        old = s["buf"][s["pos"]]
+        s["buf"][s["pos"]] = value
+        s["pos"] = (s["pos"] + 1) % n
+        return 0 if old is None else old
+
+    def pid(self, name, sp, pv, kp, ki, kd, lo=None, hi=None):
+        s = self._get(name, "pid")
+        dt = self.ns["dt"]
+        e = sp - pv
+        integral = s.get("integral", 0) + e * dt
+        deriv = (e - s["prev_e"]) / dt if "prev_e" in s and dt > 0 else 0
+        out = kp * e + ki * integral + kd * deriv
+        if hi is not None and out > hi:
+            out = hi
+            if e > 0:
+                integral = s.get("integral", 0)
+        elif lo is not None and out < lo:
+            out = lo
+            if e < 0:
+                integral = s.get("integral", 0)
+        s["integral"], s["prev_e"] = integral, e
+        return out
+
+
 def main(path: str) -> None:
     """Spustí inicializaci a `# ticks: N`× loop() programu ze souboru path."""
     with open(path, encoding="utf-8") as f:
@@ -122,6 +191,9 @@ def main(path: str) -> None:
         ticks = int(first.split(":")[1])
     ns = {name: Signals() for name in ("inp", "red", "green", "out", "out_red", "out_green")}
     ns.update(tick=0, game_tick=0, dt=1, config=lambda **kw: None)
+    lib = Elements(ns)
+    for name in ("latch", "timer", "edge", "counter", "delay", "pid"):
+        ns[name] = getattr(lib, name)
     exec(compile(src, path, "exec"), ns)
     for t in range(ticks):
         ns["tick"] = t

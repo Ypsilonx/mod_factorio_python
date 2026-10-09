@@ -16,7 +16,38 @@ local CODE = table.concat({
   "    print(n, a is b, d.keys(), a[1] is None, a[2])",
 }, "\n")
 
+-- Stavové prvky knihovny: stav pod jménem ("#lib") musí přežít uložení a načtení.
+local ELEMENTS = table.concat({
+  "fires = 0",
+  "def loop():",
+  "    global fires",
+  "    if timer('t', 7):",
+  "        fires += 1",
+  "    print(tick, delay('d', tick, 5), fires, counter('c'))",
+}, "\n")
+
 return {
+  {
+    name = "uložení a načtení: stav prvků knihovny (timer, delay, counter) pokračuje",
+    setup = function(ctx)
+      H.power(ctx)
+      ctx.p = H.pythonator(ctx, 1, 1, ELEMENTS)
+    end,
+    steps = {
+      { ticks = runner.SAVE_TICK - 10, run = function() end },
+      { ticks = 60, run = function(ctx)
+        if not runner.was_loaded() then error("hra se nenačetla z uložené pozice") end
+        local s = H.state(ctx.p)
+        if s.error then error("chyba po načtení: " .. serpent.line(s.error)) end
+        local t, d, f, c = s.prints[#s.prints]:match("^(%d+) (%-?%d+) (%d+) (%d+)$")
+        t, d, f, c = tonumber(t), tonumber(d), tonumber(f), tonumber(c)
+        H.eq(d, t - 5, "delay po načtení")
+        H.eq(f, math.floor((t + 1) / 7), "timer po načtení")
+        H.eq(c, t + 1, "counter po načtení")
+        if s.globals["#lib"] then error("#lib se nemá ukazovat mezi globály") end
+      end },
+    },
+  },
   {
     name = "uložení a načtení: stav pokračuje bez initu, pořadí dict, None, sdílená reference",
     setup = function(ctx)
