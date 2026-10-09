@@ -67,6 +67,16 @@ return {
     A.eq(#refs.gutter.children, E.MIN_LINES + 10, "gutter roste s textem")
     A.eq(refs.code.style.height, (E.MIN_LINES + 10) * E.LINE_HEIGHT + E.HEIGHT_RESERVE, "box roste s textem")
   end },
+  { "editor má pevnou šířku včetně posuvníku a mezeru od panelů (panely nenajíždějí do editoru)", function()
+    local t = setup()
+    local refs = open(t, 1)
+    local E = t.editor
+    A.eq(refs.scroll.style.width, E.outer_width(), "šířka scroll-pane editoru")
+    A.truthy(E.outer_width() >= E.GUTTER_WIDTH + E.WIDTH + E.SCROLLBAR_WIDTH, "šířka počítá s posuvníkem")
+    A.eq(refs.body.style.horizontal_spacing, t.window.PANEL_GAP, "mezera mezi editorem a panely")
+    A.truthy(E.MIN_LINES * E.LINE_HEIGHT + E.HEIGHT_RESERVE <= E.VIEW_HEIGHT,
+      "prázdný editor se vejde do pohledu (výběr ikon v rohu boxu je vidět)")
+  end },
   { "psaní uloží draft a posune pohled na změněný řádek", function()
     local t = setup()
     t.actions.pause(t.ctls[1])

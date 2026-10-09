@@ -11,6 +11,9 @@ local M = {}
 
 local WINDOW = "pyntr_window"
 
+--- Mezera mezi editorem a pravými panely (px). Laditelné.
+M.PANEL_GAP = 12
+
 --- Tabulka otevřených oken ve storage (založí se líně – ne v on_load).
 local function all()
   storage.gui = storage.gui or {}
@@ -63,6 +66,7 @@ function M.open(player, ctl)
   add_titlebar(frame, refs)
   local body = frame.add({ type = "flow", name = "pyntr_body", direction = "horizontal" })
   refs.body = body
+  body.style.horizontal_spacing = M.PANEL_GAP
   local left = body.add({ type = "flow", name = "pyntr_left", direction = "vertical" })
   local ed = editor.build(left)
   refs.scroll, refs.gutter, refs.code = ed.scroll, ed.gutter, ed.code

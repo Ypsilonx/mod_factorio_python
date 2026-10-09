@@ -11,12 +11,21 @@ M.WIDTH = 640
 M.VIEW_HEIGHT = 520
 --- Výška jednoho řádku textu.
 M.LINE_HEIGHT = 20
---- Nejmenší počet řádků, na který se box roztáhne (prázdný editor nemá být malý).
-M.MIN_LINES = 26
+--- Nejmenší počet řádků boxu. Výběr ikon kreslí hra do pravého dolního rohu boxu – box vyšší než pohled
+--- (VIEW_HEIGHT) by ho schoval pod spodní okraj, proto je výchozí box malý a roste až s textem.
+M.MIN_LINES = 10
 --- Rezerva výšky boxu pod posledním řádkem (vnitřní okraje text-boxu).
 M.HEIGHT_RESERVE = 12
 --- Šířka sloupce čísel řádků.
 M.GUTTER_WIDTH = 36
+--- Místo pro svislý posuvník a vnitřní okraje scroll-pane (hra je do šířky obsahu nepočítá).
+M.SCROLLBAR_WIDTH = 24
+
+--- Celková šířka editoru (scroll-pane): čísla řádků + text + posuvník s okraji.
+--- @return integer
+function M.outer_width()
+  return M.GUTTER_WIDTH + M.WIDTH + M.SCROLLBAR_WIDTH
+end
 
 --- Barvy čísel řádků: běžné a řádek s chybou.
 M.COLOR_LINE = { 0.55, 0.55, 0.55 }
@@ -49,6 +58,7 @@ function M.build(parent)
   local scroll = parent.add({ type = "scroll-pane", name = "pyntr_editor_scroll", style = "pyntr_editor_scroll",
                               horizontal_scroll_policy = "never", vertical_scroll_policy = "auto" })
   scroll.style.height = M.VIEW_HEIGHT
+  scroll.style.width = M.outer_width()
   local row = scroll.add({ type = "flow", name = "pyntr_editor_row", direction = "horizontal" })
   row.style.horizontal_spacing = 0
   local gutter = row.add({ type = "flow", name = "pyntr_gutter", direction = "vertical" })

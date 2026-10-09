@@ -126,6 +126,12 @@ return {
     storage.gui = nil
     t.events.on_refresh()
   end },
+  { "prázdný log ukáže text „zatím nic“ (ne prázdnou čárku)", function()
+    local t = setup()
+    t.events.on_gui_click({ player_index = 1, element = t.refs.log_toggle })
+    A.eq(#t.refs.log.children, 1, "jeden řádek")
+    A.same(t.refs.log.children[1].caption, { "pyntr-gui.log-empty" }, "zástupný text")
+  end },
   { "log se rozbalí a sbalí tlačítkem", function()
     local t = setup()
     A.eq(t.refs.log_pane.visible, false, "výchozí sbalený")

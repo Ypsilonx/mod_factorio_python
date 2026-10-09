@@ -44,12 +44,13 @@ styles.pyntr_panels_scroll = {
   minimal_width = 270,
 }
 
---- Rozbalovací log print() pod editorem.
+--- Rozbalovací log print() pod editorem (šířka jako editor, výška laditelná zde).
 styles.pyntr_log_scroll = {
   type = "scroll_pane_style",
   parent = "deep_scroll_pane",
-  maximal_height = 160,
-  horizontally_stretchable = "on",
+  -- pevná výška: prázdný log by se jinak smrskl na čárku
+  height = 160,
+  width = editor.outer_width(),
   padding = 4,
 }
 

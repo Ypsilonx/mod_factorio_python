@@ -48,7 +48,9 @@ Akce Play/Pauza/Reset/Krok a pohled na stav (`actions.view` → co zobrazit a po
 | Opakování pokusu bez proudu | `POWER_RETRY_TICKS` v `Pythonator/scripts/scheduler.lua` | 60 ticků |
 | Délka logu print() / interval kontroly paměti | `PRINT_LINES`, `MEMORY_CHECK_TICKS` v `Pythonator/scripts/controller.lua` | 50 řádků / 60 ticků |
 | Největší zpoždění `delay()` (velikost bufferu) | `DELAY_MAX` v `Pythonator/scripts/lang/elements.lua` | 1000 volání |
-| Rozměry editoru: šířka, viditelná výška, výška řádku, min. počet řádků, rezerva, šířka čísel řádků | `WIDTH`, `VIEW_HEIGHT`, `LINE_HEIGHT`, `MIN_LINES`, `HEIGHT_RESERVE`, `GUTTER_WIDTH` v `Pythonator/scripts/gui/editor.lua` (styl řádku v `prototypes/gui.lua` je přebírá) | 640 / 520 / 20 / 26 / 12 / 36 px |
+| Rozměry editoru: šířka textu, viditelná výška, výška řádku, min. počet řádků (box vyšší než pohled schová výběr ikon), rezerva, šířka čísel řádků, místo pro posuvník | `WIDTH`, `VIEW_HEIGHT`, `LINE_HEIGHT`, `MIN_LINES`, `HEIGHT_RESERVE`, `GUTTER_WIDTH`, `SCROLLBAR_WIDTH` v `Pythonator/scripts/gui/editor.lua` (styly v `prototypes/gui.lua` je přebírají) | 640 / 520 / 20 / 10 / 12 / 36 / 24 px |
+| Mezera mezi editorem a pravými panely | `PANEL_GAP` v `Pythonator/scripts/gui/window.lua` | 12 px |
+| Výška logu print() | `height` ve stylu `pyntr_log_scroll` v `Pythonator/prototypes/gui.lua` | 160 px |
 | Barvy čísel řádků (běžné / chyba) | `COLOR_LINE`, `COLOR_ERROR` v `Pythonator/scripts/gui/editor.lua` | šedá / červená |
 | Font editoru | `pyntr-mono` v `Pythonator/prototypes/gui.lua` (`from = "default-mono"`, velikost) | 14 |
 | Barva pruhu ceny (podíl limitu watchdogu: žlutá / červená) | `COST_WARN`, `COST_HIGH` v `Pythonator/scripts/gui/status.lua` | 0,5 / 0,9 |

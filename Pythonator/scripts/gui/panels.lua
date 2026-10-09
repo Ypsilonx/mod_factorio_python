@@ -261,7 +261,9 @@ function M.refresh(refs, ctl)
   fill_table(refs.globals, M.rows_globals(ctl.globals))
   fill_table(refs.lib, M.rows_elements(ctl.globals[elements.STATE]))
   if refs.log_pane.visible then
-    local lines = fit(refs.log, #ctl.prints, function(p) p.add({ type = "label", style = "pyntr_log_line" }) end)
+    local n = #ctl.prints
+    local lines = fit(refs.log, math.max(n, 1), function(p) p.add({ type = "label", style = "pyntr_log_line" }) end)
+    if n == 0 then lines[1].caption = { "pyntr-gui.log-empty" } end
     for i, line in ipairs(ctl.prints) do lines[i].caption = line end
   end
 end
