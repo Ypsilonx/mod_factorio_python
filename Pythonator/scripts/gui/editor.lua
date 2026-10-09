@@ -75,6 +75,7 @@ function M.resize(refs, lines)
   end
   for i = have, shown + 1, -1 do gutter.children[i].destroy() end
   refs.code.style.height = shown * M.LINE_HEIGHT + M.HEIGHT_RESERVE
+  refs.lines = shown
 end
 
 --- Zvýrazní číslo řádku s chybou (nil = žádný); předchozí zvýraznění zruší.

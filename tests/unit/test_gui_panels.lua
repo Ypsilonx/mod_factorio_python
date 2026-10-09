@@ -74,6 +74,43 @@ return {
     A.eq(t.ctl.out.both["signal-A"], 2, "program zapsal 2")
     A.eq(t.refs.out_red.children[1].number, 1, "na drátu zůstala 1")
   end },
+  { "výkon: z 300 vstupních signálů se převádí jen zobrazené (bez řazení celé sady)", function()
+    local t = setup()
+    for i = 1, 300 do t.entity.red["sig-" .. i] = i end
+    local res = require("scripts.resolver").get()
+    local orig, calls = res.canonical, 0
+    res.canonical = function(...) calls = calls + 1; return orig(...) end
+    t.events.on_refresh()
+    res.canonical = nil
+    A.eq(#t.refs.in_red.children, t.panels.PANEL_MAX_ROWS + 1, "zobrazeno PANEL_MAX_ROWS + „další“")
+    A.eq(t.refs.in_red.children[t.panels.PANEL_MAX_ROWS + 1].number, 300 - t.panels.PANEL_MAX_ROWS, "počet dalších")
+    A.truthy(calls <= t.panels.PANEL_MAX_ROWS, "převedeno jen zobrazené (" .. calls .. ")")
+  end },
+  { "výkon: repr velkého globálu se zastaví u REPR_MAX", function()
+    local t = setup()
+    local R = require("scripts.lang.builtins")
+    local visits = 0
+    local mt = { __pyntr = "obj", __repr_py = function() visits = visits + 1; return "o" end }
+    local arr = {}
+    for i = 1, 10000 do arr[i] = setmetatable({}, mt) end
+    local rows = t.panels.rows_globals({ big = R.list(arr, 10000) })
+    A.truthy(visits <= t.panels.REPR_MAX, "navštíveno jen na začátek (" .. visits .. ")")
+    A.eq(rows[1][2]:sub(1, 7), "[o, o, ", "začátek repr")
+    A.truthy(rows[1][2]:find("…$"), "zkrácení označené")
+    A.eq(t.panels.rows_globals({ s = R.list({ 1, 2 }, 2) })[1][2], "[1, 2]", "krátký repr celý")
+  end },
+  { "výkon: obnova beze změny nepřepisuje ikony signálů", function()
+    local t = setup()
+    t.entity.red["iron-plate"] = 7
+    t.events.on_refresh()
+    local cell = t.refs.in_red.children[1]
+    cell.number = "nezapsáno"
+    t.events.on_refresh()
+    A.eq(cell.number, "nezapsáno", "beze změny žádný zápis")
+    t.entity.red["iron-plate"] = 8
+    t.events.on_refresh()
+    A.eq(cell.number, 8, "změna se zapíše")
+  end },
   { "stav prvků knihovny", function()
     local t = setup("def loop():\n  latch('plné', 1, 0)\n  counter('kusy', 3)")
     t.controller.run_loop(t.ctl, 1)

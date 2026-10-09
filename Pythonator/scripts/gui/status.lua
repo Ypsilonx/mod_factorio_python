@@ -26,7 +26,7 @@ local BUTTONS = {
 --- Postaví lištu tlačítek a pruh chyby pod editor (`left`) a panel stavu do bočního sloupce (`side`).
 --- @param refs table odkazy okna (doplní se play, pause, reset, step, state, tick, cost, cost_bar, error_*)
 function M.build(left, side, refs)
-  local bar = left.add({ type = "frame", name = "pyntr_error_bar", style = "negative_subheader_frame",
+  local bar = left.add({ type = "frame", name = "pyntr_error_bar", style = "pyntr_error_bar",
                          direction = "horizontal" })
   bar.style.horizontally_stretchable = true
   refs.error_bar = bar
@@ -88,10 +88,12 @@ function M.update(refs, view, st)
   local err, compile = M.shown_error(view)
   refs.error_bar.visible = err ~= nil
   if err then refs.error_label.caption = error_caption(err, compile) end
-  -- vždy znovu: změna počtu řádků editoru čísla řádků přestaví (zvýraznění by se ztratilo)
+  -- přebarvit jen při změně řádku chyby nebo počtu řádků (nová čísla řádků mají výchozí barvu)
   local line = err and err.line or nil
-  editor.mark_error(refs, line, st.error_line)
-  st.error_line = line
+  if line ~= st.error_line or refs.lines ~= st.marked_lines then
+    editor.mark_error(refs, line, st.error_line)
+    st.error_line, st.marked_lines = line, refs.lines
+  end
 end
 
 return M

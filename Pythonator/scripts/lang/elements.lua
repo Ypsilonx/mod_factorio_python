@@ -137,8 +137,9 @@ function B.pid(...)
   local s = M.state(G, "pid", name, "pid")
   local e = num("pid", "setpoint", sp) - num("pid", "measured", pv)
   kp, ki, kd = num("pid", "kp", kp), num("pid", "ki", ki), num("pid", "kd", kd)
-  local low = (lo ~= nil and lo ~= R.None) and num("pid", "lo", lo) or nil
-  local high = (hi ~= nil and hi ~= R.None) and num("pid", "hi", hi) or nil
+  -- None podle metatabulky: po načtení hry je None nová tabulka (identita neplatí)
+  local low = (lo ~= nil and getmetatable(lo) ~= R.NoneMT) and num("pid", "lo", lo) or nil
+  local high = (hi ~= nil and getmetatable(hi) ~= R.NoneMT) and num("pid", "hi", hi) or nil
   local integral = (s.integral or 0) + e * dt
   local deriv = (s.prev_e and dt > 0) and (e - s.prev_e) / dt or 0
   local out = kp * e + ki * integral + kd * deriv

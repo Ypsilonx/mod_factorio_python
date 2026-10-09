@@ -2,7 +2,6 @@
 --- a log print(). Obnovují se jen při otevřeném okně (events.on_refresh) a prvky se mění na místě.
 local R = require("scripts.lang.builtins")
 local elements = require("scripts.lang.elements")
-local io = require("scripts.io")
 local resolver = require("scripts.resolver")
 
 local M = {}
@@ -32,12 +31,55 @@ function M.rows_globals(G)
   table.sort(names, function(a, b) return R.strcmp(a, b) < 0 end)
   local rows = {}
   for i = 1, math.min(#names, M.GLOBALS_MAX) do
-    local ok, text = pcall(R.repr, G[names[i]])
-    if not ok then text = "?" end
-    if #text > M.REPR_MAX then text = text:sub(1, M.REPR_MAX - 3) .. "…" end
-    rows[i] = { names[i], text }
+    local ok, text = pcall(M.short_repr, G[names[i]], M.REPR_MAX)
+    rows[i] = { names[i], ok and text or "?" }
   end
   return rows
+end
+
+--- repr hodnoty zkrácený na `max` znaků („…“ na konci). Kontejnery se procházejí jen do vyčerpání délky –
+--- velký globál (tisíce prvků) se při každé obnově okna nepřevádí celý.
+--- @param v any hodnota jazyka
+--- @param max integer
+--- @return string
+function M.short_repr(v, max)
+  local parts, len = {}, 0
+  local full = true
+
+  --- Připojí text; vrátí false, jakmile je délka vyčerpaná.
+  local function put(s)
+    parts[#parts + 1] = s
+    len = len + #s
+    if len > max then full = false end
+    return full
+  end
+
+  local walk
+  --- Projde hodnotu; false = konec (délka vyčerpaná).
+  walk = function(x)
+    local mt = type(x) == "table" and getmetatable(x)
+    if mt == R.ListMT or mt == R.TupleMT then
+      if not put(mt == R.ListMT and "[" or "(") then return false end
+      for i = 1, x.n do
+        if i > 1 and not put(", ") then return false end
+        if not walk(x[i]) then return false end
+      end
+      return put((mt == R.TupleMT and x.n == 1) and ",)" or (mt == R.ListMT and "]" or ")"))
+    elseif mt == R.DictMT then
+      if not put("{") then return false end
+      for i, k in ipairs(x.keys) do
+        if i > 1 and not put(", ") then return false end
+        if not (walk(k) and put(": ") and walk(R.dict_get(x, k))) then return false end
+      end
+      return put("}")
+    end
+    return put(R.repr(x))
+  end
+
+  walk(v)
+  local text = table.concat(parts)
+  if full and #text <= max then return text end
+  return text:sub(1, max - 3) .. "…"
 end
 
 --- Řádky mřížky signálů z dvojic {klíč, hodnota}.
@@ -133,18 +175,33 @@ local function fit(parent, n, add)
   return parent.children
 end
 
---- Naplní mřížku signálů (na místě).
-local function fill_signals(grid, ps)
+--- Naplní mřížku signálů (na místě). Do buňky se zapisuje jen při změně: `shown` (obyčejná tabulka ve
+--- stavu okna) si pamatuje zobrazené ikony – zápis vlastnosti prvku je volání API.
+--- @param grid LuaGuiElement
+--- @param ps table[] dvojice {klíč, hodnota} (už oříznuté nebo celé)
+--- @param total integer|nil celkový počet signálů (výchozí #ps)
+--- @param shown table paměť zobrazených buněk
+local function fill_signals(grid, ps, total, shown)
   local rows, rest = M.rows_signals(ps)
+  rest = math.max((total or #ps) - #rows, rest)
   local n = #rows + (rest > 0 and 1 or 0)
+  local before = #grid.children
   local cells = fit(grid, n, function(p) p.add({ type = "sprite-button", style = "slot_button" }) end)
+  -- nové buňky nic nezobrazují, zrušené se zapomenou
+  for i = before + 1, n do shown[i] = nil end
+  for i = n + 1, #shown do shown[i] = nil end
   for i, row in ipairs(rows) do
-    local c = cells[i]
-    c.sprite, c.number, c.tooltip = row.sprite, row.number, row.tooltip
+    local id = row.sprite .. "=" .. tostring(row.number)
+    if shown[i] ~= id then
+      local c = cells[i]
+      c.sprite, c.number, c.tooltip = row.sprite, row.number, row.tooltip
+      shown[i] = id
+    end
   end
-  if rest > 0 then
+  if rest > 0 and shown[n] ~= "+" .. rest then
     local c = cells[n]
     c.sprite, c.number, c.tooltip = "utility/questionmark", rest, { "pyntr-gui.more-signals", rest }
+    shown[n] = "+" .. rest
   end
 end
 
@@ -165,12 +222,27 @@ local function sorted_pairs(map)
   return ps
 end
 
---- Signály na vstupním drátu entity (čtení jen pro otevřené okno, bez sdílení s programem).
+--- Signály na vstupním drátu entity v pořadí hry (deterministické), jen prvních PANEL_MAX_ROWS převedených
+--- na klíče – celá sada (stovky signálů) se kvůli zobrazení neřadí ani nepřevádí.
+--- @return table[] dvojice {klíč, hodnota}
+--- @return integer celkový počet signálů na drátu
 local function input_pairs(entity, wire)
-  if not entity.valid then return {} end
-  local source = io.reader_source(entity, { wire }, resolver.get())
-  source.reset(nil)
-  return source.all()
+  if not entity.valid then return {}, 0 end
+  local signals = entity.get_signals(wire)
+  if not signals then return {}, 0 end
+  local res = resolver.get()
+  local ps = {}
+  for i = 1, math.min(#signals, M.PANEL_MAX_ROWS) do
+    ps[i] = { res:canonical(signals[i].signal), signals[i].count }
+  end
+  return ps, #signals
+end
+
+--- Paměť zobrazených buněk mřížky `name` ve stavu okna.
+local function shown_of(refs, name)
+  refs.shown = refs.shown or {}
+  refs.shown[name] = refs.shown[name] or {}
+  return refs.shown[name]
 end
 
 --- Obnoví obsah panelů podle kontroléru.
@@ -178,12 +250,14 @@ end
 --- @param ctl table kontrolér
 function M.refresh(refs, ctl)
   local W = defines.wire_connector_id
-  fill_signals(refs.in_red, input_pairs(ctl.entity, W.combinator_input_red))
-  fill_signals(refs.in_green, input_pairs(ctl.entity, W.combinator_input_green))
+  local ps, total = input_pairs(ctl.entity, W.combinator_input_red)
+  fill_signals(refs.in_red, ps, total, shown_of(refs, "in_red"))
+  ps, total = input_pairs(ctl.entity, W.combinator_input_green)
+  fill_signals(refs.in_green, ps, total, shown_of(refs, "in_green"))
   -- skutečně odeslaný stav drátu (po chybě uprostřed loop() se liší od ctl.out)
   local wires = ctl.wires or {}
-  fill_signals(refs.out_red, sorted_pairs(wires.red and wires.red.sent))
-  fill_signals(refs.out_green, sorted_pairs(wires.green and wires.green.sent))
+  fill_signals(refs.out_red, sorted_pairs(wires.red and wires.red.sent), nil, shown_of(refs, "out_red"))
+  fill_signals(refs.out_green, sorted_pairs(wires.green and wires.green.sent), nil, shown_of(refs, "out_green"))
   fill_table(refs.globals, M.rows_globals(ctl.globals))
   fill_table(refs.lib, M.rows_elements(ctl.globals[elements.STATE]))
   if refs.log_pane.visible then

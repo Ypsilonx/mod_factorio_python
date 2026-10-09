@@ -90,7 +90,7 @@ function M.refresh(player)
   local text = view.can.edit and actions.text(ctl) or ctl.code
   st.refs.code.read_only = not view.can.edit
   editor.set_text(st.refs, text)
-  st.text, st.edit = text, view.can.edit
+  st.text, st.edit, st.code = text, view.can.edit, ctl.code
   status.update(st.refs, view, st)
   panels.refresh(st.refs, ctl)
 end
@@ -106,7 +106,9 @@ function M.refresh_live(player)
     return
   end
   local view = actions.view(ctl)
-  if view.can.edit ~= st.edit then return M.refresh(player) end
+  -- plná obnova i po novém kódu bez akce v okně (vložení nastavení, remote set_code), jinak by
+  -- editor ukazoval starý text a Play by nový kód přepsal
+  if view.can.edit ~= st.edit or ctl.code ~= st.code then return M.refresh(player) end
   status.update(st.refs, view, st)
   panels.refresh(st.refs, ctl)
 end

@@ -112,6 +112,24 @@ return {
     A.eq(refs.frame.valid, false, "okno zničené")
     A.eq(storage.gui[1], nil, "stav okna smazán")
   end },
+  { "pruh chyby: vlastní styl bez záporného okraje a s výškou pro víc řádků", function()
+    local t = setup()
+    local refs = open(t, 1)
+    A.eq(refs.error_bar.style.name, "pyntr_error_bar", "styl pruhu chyby")
+    local saved = _G.data
+    _G.data = { extend = function() end, raw = { ["gui-style"] = { default = {} } } }
+    package.loaded["prototypes.gui"] = nil
+    require("prototypes.gui")
+    local style = data.raw["gui-style"].default.pyntr_error_bar
+    _G.data = saved
+    package.loaded["prototypes.gui"] = nil
+    A.truthy(style, "styl definovaný")
+    A.eq(style.parent, "negative_subheader_frame", "rodič")
+    -- vanilla rodič má bottom_margin = -36 (překryl by lištu tlačítek) a pevnou výšku 36 (ořízl by text)
+    A.eq(style.bottom_margin, 0, "bez záporného okraje")
+    A.eq(style.vertically_stretchable, "on", "výška podle textu")
+    A.truthy(style.height == nil and style.maximal_height and style.maximal_height > 36, "víc řádků")
+  end },
   { "křížek v titulku zavře okno", function()
     local t = setup()
     local refs = open(t, 1)
@@ -122,6 +140,19 @@ return {
     local t = setup()
     t.events.on_gui_opened({ player_index = 1, entity = { valid = true, name = "arithmetic-combinator" } })
     A.eq(t.window.get(t.player), nil, "žádné okno")
+  end },
+  { "vložení kódu do pozastavené budovy s otevřeným oknem: editor ukáže nový kód, Play ho nevrátí", function()
+    local t = setup()
+    t.actions.pause(t.ctls[1])
+    local refs = open(t, 1)
+    type_text(refs, "def loop():\n  pass  # rozepsáno")
+    local pasted = "def loop():\n  out['signal-A'] = 1"
+    require("scripts.lifecycle").load_code(t.ctls[1], pasted, false)
+    t.events.on_refresh()
+    A.eq(refs.code.text, pasted, "editor ukazuje vložený kód")
+    A.eq(t.ctls[1].draft, nil, "rozepsaný kód nahradil nový kód")
+    t.events.on_gui_click({ player_index = 1, element = refs.play })
+    A.eq(t.ctls[1].code, pasted, "Play spustil vložený kód")
   end },
   { "odchod hráče ze hry zavře okno, odebrání hráče uklidí stav", function()
     local t = setup()

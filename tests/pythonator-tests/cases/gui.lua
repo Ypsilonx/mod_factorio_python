@@ -11,6 +11,7 @@ local STYLES = {
   frame_action_button = "button_style", frame_title = "label_style", heading_2_label = "label_style",
   inside_deep_frame = "frame_style", inside_shallow_frame_with_padding = "frame_style",
   negative_subheader_frame = "frame_style", slot_button = "button_style", tool_button = "button_style",
+  pyntr_error_bar = "frame_style",
 }
 
 return {

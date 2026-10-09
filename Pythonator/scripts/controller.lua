@@ -205,6 +205,8 @@ function M.set_code(ctl, source)
     return false, err
   end
   ctl.code = source
+  -- nový kód (GUI, vložení nastavení, remote) nahrazuje i rozepsaný text v editoru
+  ctl.draft = nil
   ctl.compile_error, ctl.error = nil, nil
   for k in pairs(ctl.globals) do ctl.globals[k] = nil end
   clear_outputs(ctl)

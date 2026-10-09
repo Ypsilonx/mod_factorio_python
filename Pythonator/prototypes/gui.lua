@@ -59,3 +59,14 @@ styles.pyntr_log_line = {
   parent = "label",
   font = "pyntr-mono",
 }
+
+--- Pruh chyby pod editorem. Vanilla rodič má bottom_margin = -36 (sahá do prvku pod sebou – překryl by
+--- lištu tlačítek) a pevnou výšku 36 (víceřádková chyba by se ořízla).
+styles.pyntr_error_bar = {
+  type = "frame_style",
+  parent = "negative_subheader_frame",
+  bottom_margin = 0,
+  minimal_height = 36,
+  maximal_height = 160,
+  vertically_stretchable = "on",
+}

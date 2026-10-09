@@ -94,6 +94,18 @@ return {
     A.eq(r.error_bar.visible, false, "chyba zmizela")
     A.eq(r.gutter.children[2].style.font_color, require("scripts.gui.editor").COLOR_LINE, "řádek bez zvýraznění")
   end },
+  { "výkon: zvýraznění řádku chyby se při obnově beze změny nepřepisuje", function()
+    local t = setup()
+    local editor = require("scripts.gui.editor")
+    t.controller.run_loop(t.ctl, 1)
+    t.events.on_refresh()
+    local orig, calls = editor.mark_error, 0
+    editor.mark_error = function(...) calls = calls + 1; return orig(...) end
+    t.events.on_refresh()
+    t.events.on_refresh()
+    editor.mark_error = orig
+    A.eq(calls, 0, "beze změny chyby ani počtu řádků žádné přebarvení")
+  end },
   { "cena posledního běhu proti limitu", function()
     local t = setup()
     t.controller.run_loop(t.ctl, 1)

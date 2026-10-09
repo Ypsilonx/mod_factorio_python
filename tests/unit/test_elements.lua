@@ -56,6 +56,15 @@ return {
     A.eq(fails("def loop():\n  latch(5, 1, 0)"), "pyntr-err.bad-arg", "jméno není str")
     A.eq(fails("def loop():\n  latch('a', 1)"), "pyntr-err.arg-count", "počet argumentů")
   end },
+  { "pid s None z globálu po načtení hry (None = nová tabulka s NoneMT)", function()
+    local res = P.run("LO = None\ndef loop():\n  print(pid('p', 10, 0, 1, 0, 0, LO, 5))", 1)
+    local copy = setmetatable({}, R.NoneMT)
+    res.G.LO = copy
+    local inst = require("scripts.lang.vm").instantiate(res.prog, res.G, {
+      print = function() end, tick = 0, game_tick = 0, dt = 1 })
+    local ok, err = vm.run(inst, "loop", 10000)
+    A.eq(ok, true, "pid s kopií None: " .. tostring(err and err.key))
+  end },
   { "jména prvků jsou vyhrazená", function()
     A.raises(function() P.program("timer = 1\ndef loop():\n  pass") end, "reserved-name")
   end },

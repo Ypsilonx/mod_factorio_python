@@ -98,6 +98,12 @@ Akce Play/Pauza/Reset/Krok a pohled na stav (`actions.view` → co zobrazit a po
 - [ ] Zbourání budovy s otevřeným oknem okno zavře bez chyby; totéž po aktualizaci modu (okna se zavřou).
 - [ ] Okno nad budovou se 100 signály na vstupu: UPS v F4/debug se viditelně nezmění.
 - [ ] Multiplayer (pokud jde vyzkoušet): Play jednoho hráče obnoví okno druhého.
+- [ ] Víceřádková chyba (dlouhá hláška): červený pruh se roztáhne a nezakryje lištu tlačítek pod sebou.
+- [ ] Shift+klik vložení nastavení do pozastavené budovy s otevřeným oknem: editor ukáže vložený kód a ▶ spustí právě ten.
+- [ ] Glyfy ▶ ⏸ ⟳ ⏭ ● v textech stavu, tooltipech a nápovědě se vykreslí (ne čtverečky).
+- [ ] Po uložení a načtení s otevřeným oknem zavřou okno E i Esc (ne jen ✕).
+- [ ] Příklad „Sekvence“ v nápovědě: `"ABSU"[step]` se zobrazí doslova (hranaté závorky nevezme jako rich text).
+- [ ] Okno nad budovou se 300 signály na vstupu a velkým listem v globálu: UPS se viditelně nezmění.
 - [ ] Shift+pravý / levý klik mezi dvěma budovami přenese kód.
 - [ ] Ctrl+C / Ctrl+V budovy přenese kód.
 - [ ] Vytěžit budovu → nezůstanou žádné skryté entity (Alt-mód, F4 → show-entity-info).
