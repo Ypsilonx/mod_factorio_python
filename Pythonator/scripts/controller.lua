@@ -178,15 +178,16 @@ end
 --- Spustí jeden loop() v herním ticku `game_tick` (volá plánovač nebo krok z GUI).
 --- @param ctl table
 --- @param game_tick integer
+--- @param lost integer|nil ticků bez proudu od posledního běhu – do `tick` se nepočítají (do `dt` ano)
 --- @return boolean ok loop proběhl bez chyby
-function M.run_loop(ctl, game_tick)
+function M.run_loop(ctl, game_tick, lost)
   if not ctl.running or ctl.error then return false end
   local entry = instance(ctl)
   if not entry then return false end
   local dt = ctl.interval
   if ctl.last_run then
     dt = game_tick - ctl.last_run
-    ctl.tick = ctl.tick + dt
+    ctl.tick = ctl.tick + dt - (lost or 0)
   end
   ctl.last_run = game_tick
   local IO = entry.IO

@@ -19,15 +19,16 @@ function M.reset(keep_storage)
   for stype, set in pairs(fake_protos()) do protos[PROTO_TABLES[stype]] = set end
   _G.prototypes = protos
   _G.defines = { wire_connector_id = { combinator_input_red = 1, combinator_input_green = 2,
-                                       combinator_output_red = 3, combinator_output_green = 4 } }
-  for _, name in ipairs({ "scripts.resolver", "scripts.io", "scripts.controller" }) do package.loaded[name] = nil end
+                                       combinator_output_red = 3, combinator_output_green = 4 },
+                 entity_status = { working = 1, no_power = 2, low_power = 3 } }
+  for _, name in ipairs({ "scripts.resolver", "scripts.io", "scripts.controller", "scripts.scheduler" }) do package.loaded[name] = nil end
 end
 
 --- Falešná entita Pythonatoru se signály na vstupních drátech.
 --- @param unit integer unit_number
 --- @return table entita; `red`/`green` = { "jméno" = hodnota } (jen item/virtual s kvalitou normal)
 function M.entity(unit)
-  local e = { unit_number = unit, valid = true, red = {}, green = {} }
+  local e = { unit_number = unit, valid = true, red = {}, green = {}, status = 1 }
   --- Signály drátu podle id konektoru.
   local function wire(id) return id == 1 and e.red or id == 2 and e.green or {} end
   function e.get_signal(sid, a, b)
