@@ -1,0 +1,1 @@
+-- Napojení událostí hry na moduly ve scripts/ (logika je v modulech, ne zde).

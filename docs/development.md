@@ -18,12 +18,15 @@
 ## Testy
 - `bash tools/run-unit.sh` – jednotkové + konformní testy.
 - `bash tools/gen-conformance.sh` – přegenerování `.out` v CPythonu (jen při změně případů).
+- `bash tools/run-tests.sh vanilla|space-age` – integrační testy v headless Factoriu (testovací mod `tests/pythonator-tests/`, běh v `.test-run/`).
+- `bash tools/run-tests.sh mods <mod>…` – kompatibilita s cizími mody ze `%APPDATA%/Factorio/mods`.
+- `bash tools/link-mod.sh` – propojí `Pythonator/` do složky modů hry (junction) pro ruční zkoušení.
 
 ## Kde ladit hodnoty
 | Hodnota | Kde | Výchozí |
 |---|---|---|
-| Limit watchdogu (průchod cyklem a volání funkce = 1; vestavěné funkce a operace s kontejnery/řetězci platí počtem prvků či bajtů výsledku, PŘED alokací) | předává hostitel do `vm.run(inst, what, limit)` (nastavení `pyntr-watchdog-limit`, plán 2) | 10 000 |
-| Limit paměti (prvky list/tuple/dict v globálech; řetězec = 1 + délka // 100) | `vm.check_memory(G, limit)` (nastavení `pyntr-memory-limit`, plán 2) | 10 000 |
+| Limit watchdogu (průchod cyklem a volání funkce = 1; vestavěné funkce a operace s kontejnery/řetězci platí počtem prvků či bajtů výsledku, PŘED alokací) | předává hostitel do `vm.run(inst, what, limit)` – map setting `pyntr-watchdog-limit` (`Pythonator/settings.lua`, 100–200 000, strop `LIMIT_MAX`) | 10 000 |
+| Limit paměti (prvky list/tuple/dict v globálech; řetězec = 1 + délka // 100) | `vm.check_memory(G, limit)` – map setting `pyntr-memory-limit` (`Pythonator/settings.lua`, 100–200 000) | 10 000 |
 
 ## Známé odchylky od Pythonu
 - `int` a `float` se nerozlišují: `6 / 2` vypíše `3`, ne `3.0`; čísla nad 2^53 ztrácí přesnost.
