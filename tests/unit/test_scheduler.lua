@@ -57,23 +57,31 @@ return {
     local scheduler, ctl, entity = setup()
     scheduler.add(ctl.unit, 1)
     ticks(scheduler, 1, 2)
-    entity.status = defines.entity_status.no_power
+    entity.energy = 0
     ticks(scheduler, 3, 100)
-    entity.status = defines.entity_status.working
+    entity.energy = 1000
     ticks(scheduler, 101, 200)
     -- běh v 1 a 2; v ticku 3 bez proudu → další pokus 63 (bez proudu) → 123 s proudem
     A.truthy(log_of(ctl):find("[(0, 1, 1), (1, 2, 1), (2, 123, 121), ", 1, true), "po obnově: tick +1, dt = celá pauza")
     A.truthy(log_of(ctl):find("(3, 124, 1)", 1, true), "pak zase po ticku")
+  end },
+  { "zbytek energie menší než spotřeba ticku = bez proudu (zbouraný sloup)", function()
+    local scheduler, ctl, entity = setup()
+    scheduler.add(ctl.unit, 1)
+    ticks(scheduler, 1, 2)
+    entity.energy = 222 -- zbytek v zásobníku menší než spotřeba jednoho ticku (ověřeno ve hře)
+    ticks(scheduler, 3, 50)
+    A.eq(log_of(ctl), "[(0, 1, 1), (1, 2, 1)]", "bez běhu")
   end },
   { "výpadek proudu, pauza, play: starý výpadek se nezapočte", function()
     local scheduler, ctl, entity = setup()
     local controller = require("scripts.controller")
     scheduler.add(ctl.unit, 1)
     ticks(scheduler, 1, 2)
-    entity.status = defines.entity_status.no_power
+    entity.energy = 0
     ticks(scheduler, 3, 10)
     controller.stop(ctl)
-    entity.status = defines.entity_status.working
+    entity.energy = 1000
     controller.start(ctl)
     scheduler.add(ctl.unit, 300)
     ticks(scheduler, 300, 300)

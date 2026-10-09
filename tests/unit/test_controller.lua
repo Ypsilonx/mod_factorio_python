@@ -175,6 +175,18 @@ return {
     load(controller, ctl, "def loop(): pass")
     A.eq(next(ctl.outputs.red.signals()), nil, "po nahrání vymazáno na drátě")
   end },
+  { "krok: jen při pauze, jeden loop() s dt = interval", function()
+    local controller, ctl = setup()
+    load(controller, ctl, "log = []\ndef loop():\n  log.append((tick, dt))")
+    A.eq(controller.step(ctl, 5), false, "za běhu krok nejde")
+    controller.run_loop(ctl, 5)
+    controller.stop(ctl)
+    A.eq(controller.step(ctl, 100), true, "krok")
+    A.eq(controller.step(ctl, 200), true, "další krok")
+    A.eq(ctl.running, false, "zůstává pauza")
+    local R = require("scripts.lang.builtins")
+    A.eq(R.repr(ctl.globals.log), "[(0, 1), (1, 1), (2, 1)]", "tick po intervalech")
+  end },
   { "reset bez kódu nic nedělá", function()
     local controller, ctl = setup()
     A.eq(controller.reset(ctl), false, "není co resetovat")

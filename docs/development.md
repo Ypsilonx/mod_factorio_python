@@ -55,3 +55,14 @@
 | Posun za kurzorem | ✓ při psaní: rozdíl starého a nového textu → řádek změny → `scroll_to_element` na jeho popisek; šipky a myš událost nevyvolají (známé omezení) | |
 | Vkládání ikon | nativní `icon_selector` (vkládá na skutečný kurzor); poloha jen v pravém dolním rohu boxu, styl ji neumí změnit; vlastní výběr signálu nezná kurzor → zamítnuto | rozhodnutí uživatele: nechat nativní |
 | Montovna „Nastavit recept“ | ✓ stačí signál **předmětu** (`out["iron-gear-wheel"] = 1`), prefix `recipe:` není potřeba | do příkladů v nápovědě |
+
+## Checklist ruční kontroly (headless test nemá hráče)
+- [ ] Postavit Pythonator ručně – klik na budovu neotevře vanilla okno kombinátoru.
+- [ ] Nahrát kód z konzole: `/c remote.call("pyntr", "set_code", game.player.selected.unit_number, "def loop():\n  out['signal-A'] = 1")` (s budovou pod kurzorem) a ověřit signál na výstupu.
+- [ ] Blueprint budovy s kódem → postavit z něj → kód jede (`remote.call("pyntr", "get_state", …)`).
+- [ ] Shift+pravý / levý klik mezi dvěma budovami přenese kód.
+- [ ] Ctrl+C / Ctrl+V budovy přenese kód.
+- [ ] Vytěžit budovu → nezůstanou žádné skryté entity (Alt-mód, F4 → show-entity-info).
+
+## Napájení
+Pythonator běží, jen když má v zásobníku energii aspoň na jeden tick (`entity.energy >= get_max_energy_usage`) – stejně jako vanilla kombinátor. Stav entity rozhodovat nemůže: po zbourání sloupu hlásí kombinátor napořád `low_power` a v zásobníku zůstane zbytek menší než spotřeba ticku (ověřeno sondou, Factorio 2.0.77).

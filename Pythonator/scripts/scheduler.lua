@@ -30,9 +30,11 @@ function M.add(unit, tick)
   list[#list + 1] = unit
 end
 
---- Má budova proud? (low_power se počítá jako běh – kombinátory při podpětí pracují dál.)
+--- Má budova proud? Stejně jako vanilla kombinátor: běží, jen když má v zásobníku energii aspoň na jeden
+--- tick. Stav entity spolehlivý není – ověřeno ve hře: po zbourání sloupu hlásí kombinátor napořád low_power
+--- a v zásobníku mu zůstane zbytek menší než spotřeba ticku.
 local function powered(entity)
-  return entity.status ~= defines.entity_status.no_power
+  return entity.energy >= entity.prototype.get_max_energy_usage(entity.quality)
 end
 
 --- Zpracuje jeden kontrolér v jeho ticku: spustí loop() nebo počká na proud; při úspěchu přeplánuje.

@@ -211,6 +211,17 @@ function M.reset(ctl)
   return true
 end
 
+--- Krok: při pauze provede jeden loop(), jako by od minulého uběhl právě jeden interval.
+--- @return boolean false = program běží, je v chybě nebo nemá kód; jinak výsledek loop()
+function M.step(ctl, game_tick)
+  if ctl.running or ctl.error or ctl.code == "" then return false end
+  if ctl.last_run then ctl.last_run = game_tick - ctl.interval end
+  ctl.running = true
+  local ok = M.run_loop(ctl, game_tick)
+  ctl.running = false
+  return ok
+end
+
 --- Zastaví běh (stav zůstává, tick stojí).
 function M.stop(ctl)
   ctl.running = false

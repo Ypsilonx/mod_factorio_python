@@ -20,7 +20,7 @@ function M.reset(keep_storage)
   _G.prototypes = protos
   _G.defines = { wire_connector_id = { combinator_input_red = 1, combinator_input_green = 2,
                                        combinator_output_red = 3, combinator_output_green = 4 },
-                 entity_status = { working = 1, no_power = 2, low_power = 3 } }
+                 entity_status = { working = 1, no_power = 2, low_power = 3, not_plugged_in_electric_network = 4 } }
   for _, name in ipairs({ "scripts.resolver", "scripts.io", "scripts.controller", "scripts.scheduler" }) do package.loaded[name] = nil end
 end
 
@@ -28,7 +28,8 @@ end
 --- @param unit integer unit_number
 --- @return table entita; `red`/`green` = { "jméno" = hodnota } (jen item/virtual s kvalitou normal)
 function M.entity(unit)
-  local e = { unit_number = unit, valid = true, red = {}, green = {}, status = 1 }
+  local e = { unit_number = unit, valid = true, red = {}, green = {}, status = 1, energy = 1000,
+              prototype = { get_max_energy_usage = function() return 833 end } }
   --- Signály drátu podle id konektoru.
   local function wire(id) return id == 1 and e.red or id == 2 and e.green or {} end
   function e.get_signal(sid, a, b)
