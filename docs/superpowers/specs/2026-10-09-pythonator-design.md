@@ -138,6 +138,21 @@ zdokumentovaná odchylka; sledování typu čísla by zpomalilo každou operaci.
 Chyby běhu (`TypeError`, `IndexError`, dělení nulou …) zastaví kontrolér ve stavu CHYBA s řádkem zdrojového kódu.
 `print()` zapisuje do ladicího logu budovy (posledních 50 řádků, zobrazeno v GUI; log se neukládá do globálů).
 
+### Knihovna kombinátorů (plán 3)
+
+Rychlý zápis toho, co umí vanilla kombinátory, a hotové stavové prvky – kratší psaní i rychlejší běh
+(operace nad celou sadou signálů proběhne jedním voláním runtime nad polem, ne interpretovanou smyčkou).
+
+| Skupina | Funkce (návrh, upřesní plán 3) |
+|---|---|
+| Vektorové nad objekty signálů | `inp.each(op, x)` (jako Each v aritmetickém kombinátoru), `inp.where(op, x)` (filtr jako Each v rozhodovacím), `count`, `sum`, `max_key`, `min_key`; výsledek jde rovnou do `out.set(…)` |
+| Stavové prvky (stav pod jménem v globálech programu, přežije save) | `latch(jméno, set, reset)`, `timer(jméno, perioda)`, `edge(jméno, hodnota)` (náběžná/sestupná hrana), `counter`, `delay(jméno, hodnota, n)` (zpoždění o N ticků), `pid` |
+
+- **Implementace v Lua nad polem signálů** (rozhodnutí 2026-10-09) – zachová časovou garanci T → T+1.
+- Varianta „koprocesor“ ze skrytých vanilla kombinátorů (vzor fCPU – prakticky nulová cena UPS, ale zpoždění
+  a víc ticků na operaci) je **mimo v0.1**; případně později jako volitelný režim se stejnou syntaxí.
+- Odchylka od Pythonu: tyto funkce CPython nemá – konformní harness je musí napodobit.
+
 ## Překladač a běh
 
 ```
