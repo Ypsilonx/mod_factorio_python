@@ -2,6 +2,7 @@
 
 -- Metatabulky hodnot jazyka pro uložení hry – musí se registrovat při načtení souboru.
 require("scripts.metatables")
+local controller = require("scripts.controller")
 local lifecycle = require("scripts.lifecycle")
 local scheduler = require("scripts.scheduler")
 local blueprint = require("scripts.blueprint")
@@ -45,6 +46,8 @@ script.on_event(defines.events.on_post_entity_died, lifecycle.on_post_died,
 script.on_event(defines.events.on_object_destroyed, function(event)
   if event.type == defines.target_type.entity and event.useful_id then lifecycle.remove(event.useful_id) end
 end)
+
+script.on_event(defines.events.on_runtime_mod_setting_changed, controller.refresh_settings)
 
 script.on_event(defines.events.on_player_setup_blueprint, blueprint.on_setup)
 script.on_event(defines.events.on_entity_settings_pasted, blueprint.on_pasted)

@@ -33,14 +33,14 @@ end
 --- Má budova proud? Stejně jako vanilla kombinátor: běží, jen když má v zásobníku energii aspoň na jeden
 --- tick. Stav entity spolehlivý není – ověřeno ve hře: po zbourání sloupu hlásí kombinátor napořád low_power
 --- a v zásobníku mu zůstane zbytek menší než spotřeba ticku.
-local function powered(entity)
-  return entity.energy >= entity.prototype.get_max_energy_usage(entity.quality)
+local function powered(ctl)
+  return ctl.entity.energy >= ctl.energy_usage
 end
 
 --- Zpracuje jeden kontrolér v jeho ticku: spustí loop() nebo počká na proud; při úspěchu přeplánuje.
 local function process(ctl, tick)
   if not ctl.running or ctl.error or not ctl.entity.valid then return end
-  if not powered(ctl.entity) then
+  if not powered(ctl) then
     ctl.outage_since = ctl.outage_since or tick
     M.add(ctl.unit, tick + M.POWER_RETRY_TICKS)
     return

@@ -71,6 +71,7 @@ function M.on_configuration_changed()
     if not ctl.entity.valid then
       M.remove(unit)
     else
+      ctl.energy_usage = controller.energy_usage(ctl.entity)
       local missing = false
       for _, out in pairs(ctl.outputs or {}) do
         if not out.valid then missing = true end

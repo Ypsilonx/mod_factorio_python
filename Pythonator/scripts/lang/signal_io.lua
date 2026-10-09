@@ -69,6 +69,7 @@ local common = {
 local writer_methods = {
   get = common.get, items = common.items, keys = common.keys, values = common.values,
   clear = function(obj)
+    if next(obj.store) then obj.changed = true end
     for k in pairs(obj.store) do obj.store[k] = nil end
     return R.None
   end,
@@ -96,7 +97,13 @@ WriterMT.__setitem = function(obj, key, value)
   -- NaN a nekonečno nemají celočíselnou hodnotu (Python: OverflowError), na drát nesmí
   if x ~= x or x == math.huge or x == -math.huge then R.raise("overflow", R.str(x)) end
   x = R.wrap32(x >= 0 and math.floor(x) or math.ceil(x))
-  if x == 0 then obj.store[c] = nil else obj.store[c] = x end
+  if x == 0 then x = nil end
+  -- `changed` čte hostitel: výstupy zapisuje na drát jen po skutečné změně (program často každý tick
+  -- zapíše tytéž hodnoty).
+  if obj.store[c] ~= x then
+    obj.store[c] = x
+    obj.changed = true
+  end
 end
 
 return M

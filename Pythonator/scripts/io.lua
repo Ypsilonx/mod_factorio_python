@@ -124,6 +124,9 @@ end
 --- @return table { get(canonical) → int, all() → { {klíč, hodnota}… }, reset() }
 function M.reader_source(entity, wires, res)
   local cached
+  -- Klíče z minula v pořadí hry a jejich seřazené pořadí: hra vrací signály každý tick ve stejném
+  -- pořadí, řadit (porovnání po bajtech v Lua je drahé) je potřeba jen při změně sady signálů.
+  local last_keys, last_order
   local source = {}
 
   function source.get(canonical)
@@ -133,13 +136,26 @@ function M.reader_source(entity, wires, res)
 
   function source.all()
     if cached then return cached end
-    cached = {}
-    for _, s in ipairs(entity.get_signals(wires[1], wires[2]) or {}) do
-      local sig = s.signal
-      local key = res:canonical({ type = sig.type or "item", name = sig.name, quality = sig.quality or "normal" })
-      cached[#cached + 1] = { key, s.count }
+    local signals = entity.get_signals(wires[1], wires[2]) or {}
+    local n = #signals
+    local keys = {}
+    local same = last_keys ~= nil and #last_keys == n
+    for i = 1, n do
+      local key = res:canonical(signals[i].signal)
+      keys[i] = key
+      if same and last_keys[i] ~= key then same = false end
     end
-    table.sort(cached, function(a, b) return R.strcmp(a[1], b[1]) < 0 end)
+    if not same then
+      local order = {}
+      for i = 1, n do order[i] = i end
+      table.sort(order, function(a, b) return R.strcmp(keys[a], keys[b]) < 0 end)
+      last_keys, last_order = keys, order
+    end
+    cached = {}
+    for j = 1, n do
+      local i = last_order[j]
+      cached[j] = { keys[i], signals[i].count }
+    end
     return cached
   end
 

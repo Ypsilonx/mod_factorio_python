@@ -66,3 +66,26 @@
 
 ## Napájení
 Pythonator běží, jen když má v zásobníku energii aspoň na jeden tick (`entity.energy >= get_max_energy_usage`) – stejně jako vanilla kombinátor. Stav entity rozhodovat nemůže: po zbourání sloupu hlásí kombinátor napořád `low_power` a v zásobníku zůstane zbytek menší než spotřeba ticku (ověřeno sondou, Factorio 2.0.77).
+
+## Kompatibilita (ověřeno 2026-10-09, Factorio 2.0.77)
+`bash tools/run-tests.sh mods …` – obecné kontroly z `cases/compat.lua` (entita, recept, výzkum, dostupnost surovin):
+| Mody | Výsledek | Suroviny / prerekvizity |
+|---|---|---|
+| Pyanodon (`pymodpack` + závislosti) | ✓ | vanilla suroviny; prerekvizity basic-electronics, chemical-science-pack, circuit-network, steel-mk02; naše final-fixes běží před `pypostprocessing`, který vědu přepočítá |
+| Bob's (`bobrevamp` + 16 modů) | ✓ | vanilla suroviny; chemical-science-pack, circuit-network |
+| AAI Industry | ✓ | vanilla suroviny; chemical-science-pack, circuit-network |
+
+## Výkon (`bash tools/run-perf.sh`, 500 budov na společném zdroji 20 signálů, 3600 ticků, Factorio 2.0.77)
+| Režim | ms/tick | µs na budovu |
+|---|---|---|
+| idle (jen zdroj a proud) | 0,14 | – |
+| decider (vanilla rozhodovací kombinátor) | 0,14 | ~0 |
+| pass (prázdný `loop()`) | 1,70 | 3,1 |
+| get20 (20× `inp['signal-X']`) | 15,0 | 30 |
+| items (průchod `inp.items()` přes 20 signálů) | 27,8 | 55 |
+| hyst (hystereze nad 20 signály) | 50,5 | 101 |
+
+Čtení signálů z enginu je hlavní cena: `get_signals` se 20 signály stojí ~35 µs, `get_signal` ~1,5 µs za signál.
+Optimalizace provedené po prvním měření (hyst 108 → 50,5 ms, pass 4,29 → 1,70 ms): řazení klíčů vstupů jen při
+změně sady signálů, cache kanonických klíčů, zápis výstupů jen po změně, limity z nastavení a spotřeba energie
+v paměti místo volání API každý tick.

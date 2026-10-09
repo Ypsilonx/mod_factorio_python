@@ -75,6 +75,20 @@ return {
     controller.run_loop(ctl, 1)
     A.eq(ctl.prints[1], "7 3 4 ['iron-plate', 'signal-A']", "print")
   end },
+  { "pořadí inp.items() sedí i když se sada signálů mezi ticky mění", function()
+    local controller, ctl, entity = setup()
+    entity.red["signal-B"], entity.red["signal-A"] = 2, 1
+    load(controller, ctl, "def loop():\n  print(inp.keys())")
+    controller.run_loop(ctl, 1)
+    controller.run_loop(ctl, 2)
+    entity.red["iron-plate"], entity.red["signal-A"] = 5, nil
+    controller.run_loop(ctl, 3)
+    entity.red["signal-A"] = 7
+    controller.run_loop(ctl, 4)
+    A.eq(table.concat(ctl.prints, "|"),
+      "['signal-A', 'signal-B']|['signal-A', 'signal-B']|['iron-plate', 'signal-B']|['iron-plate', 'signal-A', 'signal-B']",
+      "pořadí")
+  end },
   { "výstupy: hold drží, clear maže před loop()", function()
     local controller, ctl = setup()
     load(controller, ctl, "n = 0\ndef loop():\n  global n\n  n += 1\n  if n == 1:\n    out['signal-A'] = 1")
@@ -125,6 +139,15 @@ return {
     load(controller2, ctl2, "def loop():\n  for i in range(200):\n    pass")
     A.eq(controller2.run_loop(ctl2, 1), false, "watchdog")
     A.eq(ctl2.error.key, "pyntr-err.watchdog", "klíč")
+  end },
+  { "změna nastavení mapy se projeví po události změny", function()
+    local controller, ctl = setup()
+    load(controller, ctl, "def loop():\n  for i in range(500):\n    pass")
+    A.eq(controller.run_loop(ctl, 1), true, "pod limitem")
+    settings.global["pyntr-watchdog-limit"].value = 100
+    controller.refresh_settings()
+    A.eq(controller.run_loop(ctl, 2), false, "nový limit platí")
+    A.eq(ctl.error.key, "pyntr-err.watchdog", "watchdog")
   end },
   { "po načtení hry (prázdná cache) pokračuje stav bez inicializace", function()
     local controller, ctl = setup()
@@ -186,6 +209,20 @@ return {
     A.eq(ctl.running, false, "zůstává pauza")
     local R = require("scripts.lang.builtins")
     A.eq(R.repr(ctl.globals.log), "[(0, 1), (1, 1), (2, 1)]", "tick po intervalech")
+  end },
+  { "režim clear smaže výstup i na drátě, nezměněný výstup se nezapisuje", function()
+    local controller, ctl = setup()
+    ctl.outputs = { red = G.output(), green = G.output() }
+    load(controller, ctl, "config(outputs='clear')\nn = 0\ndef loop():\n  global n\n  n += 1\n  if n == 1:\n    out['signal-A'] = 4")
+    controller.run_loop(ctl, 1)
+    A.eq(ctl.outputs.red.signals()["signal-A"], 4, "první tick")
+    controller.run_loop(ctl, 2)
+    A.eq(ctl.outputs.red.signals()["signal-A"], nil, "clear na drátě")
+    load(controller, ctl, "def loop():\n  out['signal-A'] = 4")
+    controller.run_loop(ctl, 3)
+    local calls = ctl.outputs.red.calls
+    controller.run_loop(ctl, 4)
+    A.eq(ctl.outputs.red.calls, calls, "stejná hodnota = žádné volání")
   end },
   { "reset bez kódu nic nedělá", function()
     local controller, ctl = setup()

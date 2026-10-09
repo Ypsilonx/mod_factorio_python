@@ -23,9 +23,32 @@ local function all()
   return storage.controllers
 end
 
+--- Limity z nastavení mapy v paměti (jméno → hodnota).
+local limits = {}
+
 --- Hodnota map setting.
 local function setting(name)
-  return settings.global[name].value
+  -- Čtení settings.global je volání API – drží se v paměti a obnoví po změně (refresh_settings).
+  -- Nastavení mapy jsou na všech klientech stejná, cache je deterministická.
+  local value = limits[name]
+  if not value then
+    value = settings.global[name].value
+    limits[name] = value
+  end
+  return value
+end
+
+--- Zapomene uložené limity z nastavení mapy (on_runtime_mod_setting_changed).
+function M.refresh_settings()
+  limits = {}
+end
+
+--- Spotřeba budovy za tick (J) – pod ní v zásobníku budova nepracuje. Počítá se při stavbě a po změně
+--- modů, ne každý tick (čtyři volání API).
+--- @param entity LuaEntity
+--- @return number
+function M.energy_usage(entity)
+  return entity.prototype.get_max_energy_usage(entity.quality)
 end
 
 --- Vytvoří stav kontroléru pro novou budovu (bez kódu, zastavený).
@@ -48,6 +71,7 @@ function M.create(entity)
     outputs_mode = "hold",
     prints = {},
     used = 0,
+    energy_usage = M.energy_usage(entity),
   }
   all()[ctl.unit] = ctl
   return ctl
@@ -135,16 +159,25 @@ local function check_memory(ctl)
   return true
 end
 
---- Zapíše výstupy na dráty, pokud má kontrolér skryté výstupy (v jednotkových testech bez nich nemusí).
-local function flush(ctl)
-  if ctl.outputs then io.flush(ctl) end
+--- Zapíše výstupy na dráty, pokud se změnily (zapisovací objekty hlásí `changed`) nebo `force`.
+--- Kontrolér bez skrytých výstupů (jednotkové testy) nic nezapisuje.
+local function flush(ctl, entry, force)
+  local IO = entry.IO
+  if ctl.outputs and (force or IO.out.changed or IO.out_red.changed or IO.out_green.changed) then io.flush(ctl) end
+  IO.out.changed, IO.out_red.changed, IO.out_green.changed = nil, nil, nil
 end
 
 --- Vyprázdní tabulky výstupů (tabulky zůstávají – drží je zapisovací objekty instance).
+--- @return boolean něco bylo nastavené
 local function clear_outputs(ctl)
+  local any = false
   for _, store in pairs(ctl.out) do
-    for k in pairs(store) do store[k] = nil end
+    for k in pairs(store) do
+      store[k] = nil
+      any = true
+    end
   end
+  return any
 end
 
 --- Nahraje nový kód. Při chybě překladu běží dál starý program a chyba se uloží do compile_error.
@@ -171,7 +204,7 @@ function M.set_code(ctl, source)
   local entry = build(ctl, program)
   -- Vymazané výstupy jdou na drát hned; co nastaví init, také (init může výstupy zapsat)
   if run(ctl, entry, "init") then check_memory(ctl) end
-  flush(ctl)
+  flush(ctl, entry, true)
   return true
 end
 
@@ -193,9 +226,9 @@ function M.run_loop(ctl, game_tick, lost)
   local IO = entry.IO
   IO.tick, IO.game_tick, IO.dt = ctl.tick, game_tick, dt
   for _, source in pairs(entry.sources) do source.reset() end
-  if ctl.outputs_mode == "clear" then clear_outputs(ctl) end
+  local cleared = ctl.outputs_mode == "clear" and clear_outputs(ctl)
   if not run(ctl, entry, "loop") then return false end
-  flush(ctl)
+  flush(ctl, entry, cleared)
   if ctl.tick - ctl.memory_checked >= M.MEMORY_CHECK_TICKS then return check_memory(ctl) end
   return true
 end
