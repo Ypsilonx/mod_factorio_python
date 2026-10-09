@@ -18,9 +18,10 @@ end
 --- @param src string
 --- @param ticks integer|nil počet ticků (výchozí 1)
 --- @param values table|nil vstupní signály kanonický klíč → hodnota (inp i red)
+--- @param io table|nil přepsané hodnoty IO (např. { dt = 9 })
 --- @return table|nil result {lines (spojené "|"), G, out, prog}
 --- @return table|nil err
-function P.run(src, ticks, values)
+function P.run(src, ticks, values, io)
   local prog = P.program(src)
   local resolver = signals.new_resolver(fake())
   local lines, store = {}, {}
@@ -45,6 +46,7 @@ function P.run(src, ticks, values)
     print = function(s) lines[#lines + 1] = s end,
     tick = 0, game_tick = 0, dt = 1,
   }
+  for k, v in pairs(io or {}) do IO[k] = v end
   local G = {}
   local inst = vm.instantiate(prog, G, IO)
   local ok, err = vm.run(inst, "init", 10000)

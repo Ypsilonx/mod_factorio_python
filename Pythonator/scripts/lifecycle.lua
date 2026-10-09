@@ -22,7 +22,7 @@ end
 --- Po změně stavu (nahrání kódu, Play, Pauza, Reset, Krok): naplánuje běžící kontrolér na příští tick
 --- a překreslí stavovou LED.
 function M.wake(ctl)
-  if ctl.running and not ctl.error then scheduler.add(ctl.unit, game.tick + 1) end
+  if ctl.running and not ctl.error then scheduler.add(ctl.unit, scheduler.first_tick(ctl.unit, ctl.interval, game.tick)) end
   indicator.update(ctl)
 end
 
@@ -69,6 +69,10 @@ function M.on_cloned(event)
   M.on_built(dst, tags)
 end
 
+--- Posluchači odstranění budovy: function(unit_number) (GUI zavře okna nad zaniklou budovou).
+--- Registrují se při načtení modulů, ne za běhu – seznam není stav hry.
+M.on_removed = {}
+
 --- Odstraní stav a skryté výstupy kontroléru (jakákoli cesta zániku budovy).
 function M.remove(unit)
   local ctl = controller.get(unit)
@@ -76,6 +80,7 @@ function M.remove(unit)
   if ctl.led and ctl.led.valid then ctl.led.destroy() end
   io.detach_outputs(ctl.outputs)
   controller.destroy(unit)
+  for _, f in ipairs(M.on_removed) do f(unit) end
 end
 
 --- Otočení nebo převrácení budovy: LED se přesune na nové místo.

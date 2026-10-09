@@ -33,6 +33,18 @@ function M.add(unit, tick)
   list[#list + 1] = unit
 end
 
+--- Tick prvního běhu po startu (Play, Reset, načtení, změna modů). S intervalem > 1 běží budova ve fázi
+--- `unit_number % interval`: budovy zapnuté najednou se rozloží do různých ticků (žádná špička jednou za
+--- interval) a fáze zůstane stejná i po načtení hry. Deterministické – závisí jen na unit_number a ticku.
+--- @param unit integer unit_number
+--- @param interval integer
+--- @param tick integer aktuální tick
+--- @return integer tick > aktuální
+function M.first_tick(unit, interval, tick)
+  if interval <= 1 then return tick + 1 end
+  return tick + 1 + (unit - (tick + 1)) % interval
+end
+
 --- Má budova proud? Energie v zásobníku aspoň na jeden tick, nebo se od minulé kontroly změnila.
 --- Sonda (2.0.77): při podpětí se zásobník na celý tick nedoplní, ale energie tick od ticku kolísá a vanilla
 --- kombinátor běží; bez zdroje i bez sloupu stojí energie na zbytku (stav je v obou případech low_power).
@@ -86,13 +98,13 @@ function M.on_tick(tick)
   end
 end
 
---- Přestaví plán: všechny běžící kontroléry na příští tick (on_configuration_changed, start, reset).
+--- Přestaví plán: všechny běžící kontroléry na první tick své fáze (on_configuration_changed).
 --- @param tick integer aktuální tick
 function M.rebuild(tick)
   storage.schedule = {}
   for unit, ctl in pairs(storage.controllers or {}) do
     ctl.scheduled_tick = nil
-    if ctl.running and not ctl.error then M.add(unit, tick + 1) end
+    if ctl.running and not ctl.error then M.add(unit, M.first_tick(unit, ctl.interval, tick)) end
   end
 end
 

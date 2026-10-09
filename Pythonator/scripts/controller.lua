@@ -39,6 +39,13 @@ local function setting(name)
   return value
 end
 
+--- Limit z nastavení mapy (pro zobrazení ceny v GUI).
+--- @param name string jméno map setting
+--- @return number
+function M.limit(name)
+  return setting(name)
+end
+
 --- Zapomene uložené limity z nastavení mapy (on_runtime_mod_setting_changed).
 function M.refresh_settings()
   limits = {}
@@ -198,6 +205,8 @@ function M.set_code(ctl, source)
     return false, err
   end
   ctl.code = source
+  -- nový kód (GUI, vložení nastavení, remote) nahrazuje i rozepsaný text v editoru
+  ctl.draft = nil
   ctl.compile_error, ctl.error = nil, nil
   for k in pairs(ctl.globals) do ctl.globals[k] = nil end
   clear_outputs(ctl)

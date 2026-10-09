@@ -1,5 +1,6 @@
 --- Objekty signálů pro program: čtení vstupů (inp/red/green) a zápis výstupů (out/out_red/out_green).
 local R = require("scripts.lang.builtins")
+local vector = require("scripts.lang.vector")
 
 local M = {}
 
@@ -70,14 +71,99 @@ local common = {
   values = function(obj) return list_of(obj, function(p) return p[2] end) end,
 }
 
+--- Pohled (keys, vals) na sadu signálů pro knihovnu kombinátorů (viz scripts/lang/vector.lua).
+--- Vstup: převod dvojic z `all()` se drží, dokud zdroj vrací tutéž tabulku (v hostiteli celý tick).
+--- @return table keys, table vals
+local function view(obj)
+  if getmetatable(obj) == ReaderMT then
+    local ps = obj.source.all()
+    if obj.view_of ~= ps then
+      local keys, vals = {}, {}
+      for i = 1, #ps do
+        local p = ps[i]
+        keys[i], vals[p[1]] = p[1], p[2]
+      end
+      obj.view_of, obj.view_keys, obj.view_vals = ps, keys, vals
+    end
+    return obj.view_keys, obj.view_vals
+  end
+  local keys = {}
+  for k in pairs(obj.store) do keys[#keys + 1] = k end
+  table.sort(keys, function(a, b) return R.strcmp(a, b) < 0 end)
+  return keys, obj.store
+end
+
+for name, f in pairs(vector.methods(view)) do common[name] = f end
+
+--- Pohled na sadu pro out.set/add: dict nebo objekt signálů, jinak TypeError.
+local function source_view(name, d)
+  local mt = getmetatable(d)
+  if mt == R.DictMT then return vector.dict_view(d) end
+  if mt == ReaderMT or mt == WriterMT then return view(d) end
+  R.raise("type-error", name, "dict", R.typename(d))
+end
+
+--- Hodnota pro drát: ořez k nule, přetečení do int32; 0 → nil (signál se nevysílá).
+local function signal_value(value)
+  local x = R.numv(value)
+  if not x then R.raise("type-error", "=", "signal", R.typename(value)) end
+  -- NaN a nekonečno nemají celočíselnou hodnotu (Python: OverflowError), na drát nesmí
+  if x ~= x or x == math.huge or x == -math.huge then R.raise("overflow", R.str(x)) end
+  x = x >= 0 and math.floor(x) or math.ceil(x)
+  if x > 2147483647 or x < -2147483648 then x = R.wrap32(x) end
+  if x == 0 then return nil end
+  return x
+end
+
+--- Zapíše kanonický klíč; `changed` čte hostitel: výstupy jdou na drát jen po skutečné změně
+--- (program často každý tick zapíše tytéž hodnoty).
+local function store_set(obj, c, x)
+  if obj.store[c] ~= x then
+    obj.store[c] = x
+    obj.changed = true
+  end
+end
+
 local writer_methods = {
-  get = common.get, items = common.items, keys = common.keys, values = common.values,
   clear = function(obj)
     if next(obj.store) then obj.changed = true end
     for k in pairs(obj.store) do obj.store[k] = nil end
     return R.None
   end,
+  --- out.set(d): výstupy nahradí sadou d. Nová sada se sestaví celá předem (d může být out sám) a do
+  --- úložiště jde jen rozdíl – stejné hodnoty každý tick neoznačí výstup jako změněný.
+  set = function(obj, n, d)
+    if n ~= 1 then R.raise("arg-count", "set", 1, n) end
+    local keys, vals = source_view("set", d)
+    R.charge(#keys)
+    local want = {}
+    for i = 1, #keys do
+      local k = keys[i]
+      want[canon(obj, k)] = signal_value(vals[k])
+    end
+    local store = obj.store
+    for c in pairs(store) do
+      if want[c] == nil then store[c] = nil; obj.changed = true end
+    end
+    for c, x in pairs(want) do store_set(obj, c, x) end
+    return R.None
+  end,
+  --- out.add(d): k výstupům přičte sadu d.
+  add = function(obj, n, d)
+    if n ~= 1 then R.raise("arg-count", "add", 1, n) end
+    local keys, vals = source_view("add", d)
+    R.charge(#keys)
+    for i = 1, #keys do
+      local k = keys[i]
+      local x = R.numv(vals[k])
+      if not x then R.raise("type-error", "add", "int", R.typename(vals[k])) end
+      local c = canon(obj, k)
+      store_set(obj, c, signal_value((obj.store[c] or 0) + x))
+    end
+    return R.None
+  end,
 }
+for name, f in pairs(common) do writer_methods[name] = writer_methods[name] or f end
 
 for _, mt in ipairs({ ReaderMT, WriterMT }) do
   mt.__getitem = get
@@ -98,20 +184,7 @@ WriterMT.__methods = writer_methods
 ReaderMT.__setitem = function() R.raise("readonly-signal", "inp") end
 
 WriterMT.__setitem = function(obj, key, value)
-  local c = canon(obj, key)
-  local x = R.numv(value)
-  if not x then R.raise("type-error", "=", "signal", R.typename(value)) end
-  -- NaN a nekonečno nemají celočíselnou hodnotu (Python: OverflowError), na drát nesmí
-  if x ~= x or x == math.huge or x == -math.huge then R.raise("overflow", R.str(x)) end
-  x = x >= 0 and math.floor(x) or math.ceil(x)
-  if x > 2147483647 or x < -2147483648 then x = R.wrap32(x) end
-  if x == 0 then x = nil end
-  -- `changed` čte hostitel: výstupy zapisuje na drát jen po skutečné změně (program často každý tick
-  -- zapíše tytéž hodnoty).
-  if obj.store[c] ~= x then
-    obj.store[c] = x
-    obj.changed = true
-  end
+  store_set(obj, canon(obj, key), signal_value(value))
 end
 
 return M

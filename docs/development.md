@@ -14,6 +14,20 @@
 | `compiler.lua` | `compile(source, resolver)` |
 | `runtime.lua`, `builtins.lua`, `signal_io.lua` | Python sémantika za běhu |
 | `vm.lua` | spuštění s watchdogem, pojistka paměti |
+| `vector.lua` | knihovna kombinátorů: vektorové operace (`each`, `where`, `count`, `sum`, `max_key`, `min_key`) nad pohledem `(keys, vals)` |
+| `elements.lua` | knihovna kombinátorů: stavové prvky pod jménem (`latch`, `timer`, `edge`, `counter`, `delay`, `pid`), stav v globálu `"#lib"` |
+
+## GUI (`Pythonator/scripts/gui/`)
+| Modul | Úloha |
+|---|---|
+| `window.lua` | okno hráče: stavba, `refresh` (text editoru + stav + panely), `refresh_live` (periodicky bez přepisu textu), stav `storage.gui[player_index] = {unit, refs, text, edit, error_line}` |
+| `editor.lua` | text-box s čísly řádků, výška podle řádků, posun na změněný řádek |
+| `status.lua` | lišta tlačítek, panel stavu (stav, tick, cena), pruh chyby |
+| `panels.lua` | vstupy R/G, výstupy (stav drátu), globály, prvky knihovny, log |
+| `help.lua` | okno nápovědy a příklady; seznam karet a kód příkladů sdílí s Tipy a triky (`prototypes/tips.lua`) |
+| `events.lua` | obsluha událostí GUI podle tagu `pyntr_action`, obnova `on_nth_tick`, úklid po odchodu hráče a změně modů |
+
+Akce Play/Pauza/Reset/Krok a pohled na stav (`actions.view` → co zobrazit a povolit) jsou v `scripts/actions.lua`, sdílené s remote interface. GUI se testuje unit testy s napodobeninou `LuaGuiElement` (`tests/unit/fake_gui.lua`); `test_gui_names.lua` hlídá jména prvků proti `runtime-api.json` a existenci stylů, integrační `cases/gui.lua` font a styly ve hře.
 
 ## Testy
 - `bash tools/run-unit.sh` – jednotkové + konformní testy.
@@ -33,6 +47,16 @@
 | Výzkum: povinné prerekvizity, věda navíc, cena | `EXTRA_TECHS`, `EXTRA_PACKS`, `COUNT_MULTIPLIER` v `Pythonator/prototypes/research.lua` | circuit-network; modrá věda; 1,5× nejdražší prerekvizita |
 | Opakování pokusu bez proudu | `POWER_RETRY_TICKS` v `Pythonator/scripts/scheduler.lua` | 60 ticků |
 | Délka logu print() / interval kontroly paměti | `PRINT_LINES`, `MEMORY_CHECK_TICKS` v `Pythonator/scripts/controller.lua` | 50 řádků / 60 ticků |
+| Největší zpoždění `delay()` (velikost bufferu) | `DELAY_MAX` v `Pythonator/scripts/lang/elements.lua` | 1000 volání |
+| Rozměry editoru: šířka textu, viditelná výška, výška řádku, min. počet řádků (box vyšší než pohled schová výběr ikon), rezerva, šířka čísel řádků, místo pro posuvník | `WIDTH`, `VIEW_HEIGHT`, `LINE_HEIGHT`, `MIN_LINES`, `HEIGHT_RESERVE`, `GUTTER_WIDTH`, `SCROLLBAR_WIDTH` v `Pythonator/scripts/gui/editor.lua` (styly v `prototypes/gui.lua` je přebírají) | 640 / 520 / 20 / 10 / 12 / 36 / 24 px |
+| Mezera mezi editorem a pravými panely | `PANEL_GAP` v `Pythonator/scripts/gui/window.lua` | 12 px |
+| Výška logu print() | `height` ve stylu `pyntr_log_scroll` v `Pythonator/prototypes/gui.lua` | 160 px |
+| Barvy čísel řádků (běžné / chyba) | `COLOR_LINE`, `COLOR_ERROR` v `Pythonator/scripts/gui/editor.lua` | šedá / červená |
+| Font editoru | `pyntr-mono` v `Pythonator/prototypes/gui.lua` (`from = "default-mono"`, velikost) | 14 |
+| Barva pruhu ceny (podíl limitu watchdogu: žlutá / červená) | `COST_WARN`, `COST_HIGH` v `Pythonator/scripts/gui/status.lua` | 0,5 / 0,9 |
+| Obnova otevřeného okna (ticky) | `REFRESH_TICKS` v `Pythonator/scripts/gui/events.lua` | 10 |
+| Limity panelů: ikon signálů, délka repr, počet globálů, sloupce mřížky | `PANEL_MAX_ROWS`, `REPR_MAX`, `GLOBALS_MAX`, `SIGNAL_COLUMNS` v `Pythonator/scripts/gui/panels.lua` | 60 / 60 / 40 / 6 |
+| Rozměry okna nápovědy (šířka textu, výška karet) | `TEXT_WIDTH`, `HEIGHT` v `Pythonator/scripts/gui/help.lua` | 620 / 560 px |
 
 ## Známé odchylky od Pythonu
 - `int` a `float` se nerozlišují: `6 / 2` vypíše `3`, ne `3.0`; čísla nad 2^53 ztrácí přesnost.
@@ -41,6 +65,7 @@
 - Klíčem slovníku může být jen `str`, číslo nebo `bool`.
 - `def` na nejvyšší úrovni jsou dostupné i před svou definicí (hoisting).
 - Přiřazení do globálu ve funkci bez `global` je chyba překladu (Python by vytvořil lokální proměnnou).
+- Knihovna kombinátorů (`each`, `where`, `count`, `sum`, `max_key`, `min_key`, `set`, `add`) nemá v CPythonu obdobu; konformní harness ji napodobuje třídou `Signals`. Vektorové metody má v Pythonatoru i obyčejný `dict` (kvůli řetězení), v CPythonu jen výsledky knihovny. Aritmetika `each` je jako u kombinátoru: `/` a `%` k nule, dělení nulou = 0, int32.
 
 ## Determinismus (multiplayer)
 - Kód jazyka nesmí záviset na locale: řetězce se porovnávají a řadí po bajtech (`R.strcmp`), lexer používá jen ASCII třídy znaků (`[A-Za-z0-9_]`, ne `%a/%w`), `upper/lower` mění jen ASCII a čísla se formátují s tečkou i při locale s desetinnou čárkou. Hlídají to testy v `tests/unit/test_hardening.lua` s českým locale.
@@ -57,9 +82,32 @@
 | Montovna „Nastavit recept“ | ✓ stačí signál **předmětu** (`out["iron-gear-wheel"] = 1`), prefix `recipe:` není potřeba | do příkladů v nápovědě |
 
 ## Checklist ruční kontroly (headless test nemá hráče)
-- [ ] Postavit Pythonator ručně – klik na budovu neotevře vanilla okno kombinátoru.
+- [ ] Postavit Pythonator ručně – klik na budovu otevře okno Pythonatoru (ne vanilla okno kombinátoru).
 - [ ] Nahrát kód z konzole: `/c remote.call("pyntr", "set_code", game.player.selected.unit_number, "def loop():\n  out['signal-A'] = 1")` (s budovou pod kurzorem) a ověřit signál na výstupu.
-- [ ] Blueprint budovy s kódem → postavit z něj → kód jede (`remote.call("pyntr", "get_state", …)`).
+- [ ] Blueprint budovy s kódem → postavit z něj → kód jede (okno ukáže BĚŽÍ a stejný kód).
+
+### GUI (okno, editor, nápověda)
+- [ ] Okno: titulek jde táhnout, ✕, E i Esc ho zavřou; otevření jiné budovy okno přepne.
+- [ ] Editor: psaní, výběr, Ctrl+C/V/A; čísla řádků sedí na řádky textu i u dlouhého kódu (100+ řádků); při psaní na konci dlouhého kódu se pohled posouvá za psaním.
+- [ ] Výběr ikony v rohu editoru vloží rich text signálu na kurzor; program s ikonou se přeloží.
+- [ ] Za běhu je editor jen pro čtení; ⏸ ho odemkne; rozepsaný kód přežije zavření okna i uložení hry.
+- [ ] ▶ se změněným kódem s chybou: červený pruh „Řádek N: …“, červené číslo řádku, klik na pruh posune editor na řádek; program zůstane pozastavený.
+- [ ] Chyba běhu (např. `1 // 0`): stav CHYBA, ▶ nejde, ⟳ Reset jde; po opravě kódu ▶ spustí nový kód.
+- [ ] ⏭ při pauze: tick a globály se posunou o jeden loop().
+- [ ] Panely: vstupy R/G ukazují signály z drátů, výstupy stav drátu, globály a prvky knihovny se mění za běhu; tlačítko Log rozbalí výpis print().
+- [ ] Cena a pruh ceny se mění podle programu (smyčka s mnoha průchody → žlutá/červená).
+- [ ] Nápověda (?): karty Základy, Signály, Jazyk, Knihovna, Příklady jsou čitelné v cs i en; „Vložit do editoru“ při pauze nahradí text příkladem a ▶ ho spustí.
+- [ ] Zbourání budovy s otevřeným oknem okno zavře bez chyby; totéž po aktualizaci modu (okna se zavřou).
+- [ ] Okno nad budovou se 100 signály na vstupu: UPS v F4/debug se viditelně nezmění.
+- [ ] Multiplayer (pokud jde vyzkoušet): Play jednoho hráče obnoví okno druhého.
+- [ ] Víceřádková chyba (dlouhá hláška): červený pruh se roztáhne a nezakryje lištu tlačítek pod sebou.
+- [ ] Shift+klik vložení nastavení do pozastavené budovy s otevřeným oknem: editor ukáže vložený kód a ▶ spustí právě ten.
+- [ ] Glyfy ▶ ⏸ ⟳ ⏭ ● v textech stavu, tooltipech a nápovědě se vykreslí (ne čtverečky).
+- [ ] Po uložení a načtení s otevřeným oknem zavřou okno E i Esc (ne jen ✕).
+- [ ] Příklad „Sekvence“ v nápovědě: `"ABSU"[step]` se zobrazí doslova (hranaté závorky nevezme jako rich text).
+- [ ] Nápověda → karta Výkon je čitelná (odrážky •, čísla); 150 budov s příkladem „Sekvence“ zapnutých najednou: v F4 → show-time-usage u mod-Pythonator nejsou špičky jednou za 60 ticků (max blízko průměru).
+- [ ] Tipy a triky (F1 / menu): kategorie Pythonator je dostupná hned v nové hře (bez výzkumu a budovy), záznamy Jak začít, Signály, Jazyk, Knihovna, Výkon, Příklady; odrážky a tučné názvy funkcí se vykreslí, kód příkladů neproporcionálním písmem.
+- [ ] Okno nad budovou se 300 signály na vstupu a velkým listem v globálu: UPS se viditelně nezmění.
 - [ ] Shift+pravý / levý klik mezi dvěma budovami přenese kód.
 - [ ] Ctrl+C / Ctrl+V budovy přenese kód.
 - [ ] Vytěžit budovu → nezůstanou žádné skryté entity (Alt-mód, F4 → show-entity-info).
@@ -102,6 +150,20 @@ nastavení a energie) → 31,2 (rychlé cesty překladače: `for … in x.items(
 `a if c else b` s literálem bez closure, `d.get`/`l.append` bez dispatch, číselné operace bez převodů)
 → 14,8 / 29,7 (sdílené čtení sítě).
 
+### Sekvence bez čtení vstupů (`PERF_N=150 PERF_MODES="idle seq-tick seq-change seq-60" bash tools/run-perf.sh`)
+| Režim (150 budov, příklad „Sekvence“) | ms/tick | Pythonator (bez idle 0,14) | µs na budovu |
+|---|---|---|---|
+| seq-tick – `out.clear()` + zápis každý tick | 0,98 (před zrychlením zápisu 1,07) | 0,84 | 5,6 |
+| seq-change – zápis jen při změně (timer) | 0,55 | 0,41 | 2,7 |
+| seq-60 – `config(interval=60)` | 0,19 | 0,05 | 0,4 |
+
+Ve hře s F4 → show-time-usage hráč naměřil u seq-tick (před zrychlením zápisu) 2,36 ms, seq-change 1,22 ms a
+seq-60 0,17 ms. Živá hra s profilerem je zhruba 2× dražší než `--benchmark`, poměry sedí. Pevná režie jednoho
+spuštění `loop()` (plánovač, kontrola energie, watchdog) je ~3 µs ve hře.
+
+Budovy s intervalem > 1 běží ve fázi `unit_number % interval` (`scheduler.first_tick`): zapnuté najednou se
+rozloží do různých ticků místo jedné špičky za interval. Fáze se drží i po načtení hry a změně modů.
+
 Lokální rychlé měření jazyka bez hry: `lua tools/bench-lang.lua` (µs na loop() pro sadu programů,
 napodobené API – čísla jen pro porovnání změn).
 
@@ -130,8 +192,15 @@ Skripty jsou zdroj pravdy, výstupy (PNG, `prototypes/graphics_data.lua`) se ru�
 - [ ] Ikona v inventáři, ve stromu výzkumu a thumbnail v seznamu modů.
 
 ## Známá omezení a odložené drobnosti (review plánu 2)
-- Chyba uprostřed `loop()`: výstupy zapsané před chybou zůstanou v `ctl.out`, ale na drát se nepošlou – drát drží stav z posledního úspěšného běhu (GUI v plánu 3 má ukazovat stav drátu).
+- Chyba uprostřed `loop()`: výstupy zapsané před chybou zůstanou v `ctl.out`, ale na drát se nepošlou – drát drží stav z posledního úspěšného běhu; panel Výstupy v okně ukazuje právě stav drátu (`ctl.wires`).
 - Undo zbourání (Ctrl+Z) vrátí budovu bez kódu – duch z undo nenese tagy (řešitelné přes undo-redo API 2.0).
 - Po načtení hry se každý program překládá zvlášť a všechny v prvním ticku (při stovkách budov krátké zaškobrtnutí).
 - `set_slot` skrytého výstupu vyvolá `on_entity_logistic_slot_changed` – mody, které ji poslouchají, platí za každou změnu výstupu.
 - Varianta testů `mods …` je jednofázová (bez uložení a načtení).
+
+## Známá omezení GUI a knihovny (plán 3)
+- Tab v editoru nefunguje a API nezná pozici kurzoru: pohled se posouvá jen při psaní (na první změněný řádek), šipky a myš posun nevyvolají.
+- Rozepsaný kód (`ctl.draft`) je sdílený pro budovu: když píšou dva hráči současně, poslední zápis přepíše text druhému.
+- Vektorové operace jsou zhruba stejně drahé jako ruční smyčka (`lua tools/bench-lang.lua`: `each2x` vs `loop2x`); řetězení `where(...).each(...)` = víc průchodů. Výhodou je hlavně kratší zápis.
+- `timer` po výpadku proudu (`dt` přes několik period) vystřelí jen jednou; `pid` s mezemi při saturaci nepřičítá integrál (podmíněná integrace), výstup po odchodu ze saturace skočí.
+- Panel signálů ukazuje kvalitu jen v tooltipu (ikona `sprite-button` kvalitu nevykreslí).

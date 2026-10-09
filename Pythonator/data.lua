@@ -2,6 +2,8 @@
 require("prototypes.entity")
 require("prototypes.hidden")
 require("prototypes.led")
+require("prototypes.gui")
+require("prototypes.tips")
 
 --- Jména prototypů pro runtime (hledat podle nich, ne podle prefixu – overhaul mody přidávají „pyntr-…-pyvoid“).
 data:extend({

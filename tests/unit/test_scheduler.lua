@@ -32,6 +32,26 @@ return {
     ticks(scheduler, 1, 17)
     A.eq(log_of(ctl), "[10, 13, 16]", "běhy")
   end },
+  { "první běh s intervalem: fáze podle unit_number rozloží budovy do různých ticků", function()
+    local scheduler = setup()
+    A.eq(scheduler.first_tick(7, 1, 100), 101, "interval 1: hned příští tick")
+    A.eq(scheduler.first_tick(7, 60, 100), 127, "fáze 7 z 60 (127 % 60 = 7)")
+    A.eq(scheduler.first_tick(60, 60, 100), 120, "fáze 0")
+    A.eq(scheduler.first_tick(41, 60, 100), 101, "fáze padne na příští tick")
+    local seen = {}
+    for unit = 1, 150 do seen[scheduler.first_tick(unit, 60, 100) % 60] = true end
+    local phases = 0
+    for _ in pairs(seen) do phases = phases + 1 end
+    A.eq(phases, 60, "150 budov rozložených do všech 60 fází")
+  end },
+  { "rebuild (načtení, změna modů) zachová fázi budovy", function()
+    local scheduler, ctl = setup("config(interval=10)\nlog = []\ndef loop():\n  log.append(game_tick)")
+    ctl.unit = 3
+    storage.controllers = { [3] = ctl }
+    scheduler.rebuild(100)
+    ticks(scheduler, 101, 125)
+    A.eq(log_of(ctl), "[103, 113, 123]", "běhy ve fázi unit % interval")
+  end },
   { "dvojí zařazení neběží dvakrát, platí poslední plán", function()
     local scheduler, ctl = setup("log = []\ndef loop():\n  log.append(game_tick)")
     scheduler.add(ctl.unit, 5)

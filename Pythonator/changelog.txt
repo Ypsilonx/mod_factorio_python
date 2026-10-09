@@ -3,3 +3,10 @@ Version: 0.1.0
 Date: 2026-10-09
   Features:
     - Programmable circuit controller scripted in a Python subset.
+    - In-game editor window with line numbers, signal icon selector, error line highlight and a draft that survives
+      closing the window.
+    - Play, Pause, Reset and Step buttons, status with tick and cost of the last run, panels for input and output
+      wires, global variables and a print() log.
+    - Combinator library: vector operations (each, where, count, sum, max_key, min_key, out.set, out.add) and
+      stateful elements (latch, timer, edge, counter, delay, pid).
+    - Help window with language reference and examples that can be inserted into the editor.

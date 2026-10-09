@@ -17,18 +17,26 @@ function M.reset(keep_storage)
   _G.settings = { global = { ["pyntr-watchdog-limit"] = { value = 10000 }, ["pyntr-memory-limit"] = { value = 10000 } } }
   local protos = {}
   for stype, set in pairs(fake_protos()) do protos[PROTO_TABLES[stype]] = set end
+  protos.mod_data = { ["pyntr-data"] = { data = { entity = "pyntr-pythonator", output = "pyntr-output" } } }
   _G.prototypes = protos
   _G.defines = { wire_connector_id = { combinator_input_red = 1, combinator_input_green = 2,
                                        combinator_output_red = 3, combinator_output_green = 4 },
                  entity_status = { working = 1, no_power = 2, low_power = 3, not_plugged_in_electric_network = 4 } }
-  for _, name in ipairs({ "scripts.resolver", "scripts.io", "scripts.controller", "scripts.scheduler" }) do package.loaded[name] = nil end
+  _G.game = { tick = 0 }
+  -- Kreslení LED: objekt jen musí jít zničit.
+  local function drawn() return { valid = true, destroy = function() end } end
+  _G.rendering = { draw_animation = drawn, draw_sprite = drawn }
+  for _, name in ipairs({ "scripts.resolver", "scripts.io", "scripts.controller", "scripts.scheduler",
+                          "scripts.indicator", "scripts.lifecycle", "scripts.actions" }) do
+    package.loaded[name] = nil
+  end
 end
 
 --- Falešná entita Pythonatoru se signály na vstupních drátech.
 --- @param unit integer unit_number
 --- @return table entita; `red`/`green` = { "jméno" = hodnota } (jen item/virtual s kvalitou normal)
 function M.entity(unit)
-  local e = { unit_number = unit, valid = true, red = {}, green = {}, status = 1, energy = 1000, electric_network_id = 1,
+  local e = { unit_number = unit, valid = true, direction = 0, red = {}, green = {}, status = 1, energy = 1000, electric_network_id = 1,
               prototype = { get_max_energy_usage = function() return 833 end } }
   --- Signály drátu podle id konektoru.
   local function wire(id) return id == 1 and e.red or id == 2 and e.green or {} end
