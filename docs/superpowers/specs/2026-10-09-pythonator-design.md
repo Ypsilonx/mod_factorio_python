@@ -198,7 +198,7 @@ největší proměnné). Obě pojistky jsou nezávislé na délce běhu hry (roz
 | Energie | elektrická, 50 kW (konstanta v `prototypes/entity.lua`) | „počítač“, dražší než kombinátor |
 | Výzkum | vlastní `pyntr-pythonator`; prerekvizity `circuit-network`, `advanced-circuit`; věda červená + zelená + modrá | úroveň za kombinátory |
 | Recept | 5× advanced-circuit, 2× decider-combinator, 2× arithmetic-combinator, 5× steel-plate | vzniká z kombinátorů |
-| Grafika v0.1 | tint/zvětšení vanilla kombinátoru; vlastní model z Blenderu později | nejdřív logika |
+| Grafika v0.1 | nejdřív dočasně tint vanilla kombinátoru, pak vlastní model z Blenderu s logem Pythonu (plán 2, Task 10) | nejdřív logika, vzhled na konci |
 
 Hodnoty energie, receptu a limitů pojistek budou v tabulce „Kde ladit hodnoty“ v `docs/development.md`.
 
@@ -257,7 +257,7 @@ s delším intervalem, dokud proud nebude).
 ## Mimo rozsah v0.1
 
 Displejové API, vestavěné časovače a detekce hran, úlohy (multitasking), f-stringy, auto-odsazení,
-zvýraznění syntaxe, sdílené proměnné mezi kontroléry, čtení stavu entit mimo obvodovou síť, vlastní grafika.
+zvýraznění syntaxe, sdílené proměnné mezi kontroléry, čtení stavu entit mimo obvodovou síť.
 
 ## Klíčová rozhodnutí
 
