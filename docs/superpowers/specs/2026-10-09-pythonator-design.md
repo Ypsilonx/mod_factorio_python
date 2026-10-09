@@ -130,7 +130,9 @@ Signál ve hře = `SignalID {type, name, quality}`. Zápisy v kódu:
 generátory/`yield`, `*args/**kwargs`, výchozí a pojmenované argumenty, `nonlocal`, vnořené `def`, `set`, `del`.
 
 Sémantika čísel: `/` vždy desetinné, `//` a `%` s pythonovským zaokrouhlením dolů, dělení nulou = chyba běhu.
-`str()` formátuje jako Python (`3`, `3.0`, `0.1`), nezávisle na `tostring` Lua.
+`str()` formátuje jako Python (`3`, `0.1`, `1e+20`), nezávisle na `tostring` Lua. `int` a `float` se
+nerozlišují (všechna čísla jsou Lua double), takže celé desetinné číslo se vypíše bez `.0` (`6 / 2` → `3`) –
+zdokumentovaná odchylka; sledování typu čísla by zpomalilo každou operaci.
 
 Chyby běhu (`TypeError`, `IndexError`, dělení nulou …) zastaví kontrolér ve stavu CHYBA s řádkem zdrojového kódu.
 `print()` zapisuje do ladicího logu budovy (posledních 50 řádků, zobrazeno v GUI; log se neukládá do globálů).
@@ -144,8 +146,10 @@ zdroj → lexer → parser (AST) → kontrola (global/local, klíče signálů, 
 
 - Generuje se zdroj Lua 5.2 a kompiluje `load()` (text, ne bytecode) s prostředím obsahujícím jen runtime
   knihovnu – žádný přístup k `game`, `storage`, `script`.
-- **Mapa řádků**: generátor si drží tabulku řádek Lua → řádek zdroje; chybová hláška Lua se přeloží na řádek
-  zdroje. Za běhu to nic nestojí.
+- **Řádek zdroje**: každý příkaz ve vygenerovaném kódu nejdřív zapíše své číslo řádku do lokální proměnné
+  (`_ln = 5;`); při chybě ho VM přečte. Stojí to jedno přiřazení na příkaz, ale nezávisí to na knihovně
+  `debug` ani na formátu chybových hlášek Lua (původně zvažovaná mapa řádků Lua → zdroj by se neobešla bez
+  rozboru textu chyby, který u chyb vyhozených jako tabulka nemá pozici).
 - Globály v generovaném kódu = pole tabulky stavu ve `storage` (ne upvalues Lua) → uložení hry je triviální.
 - Cache zkompilovaných funkcí je odvozená ze `storage` (kód), na každém klientovi se sestaví stejně a líně
   při prvním použití → deterministické, multiplayer bezpečné.
