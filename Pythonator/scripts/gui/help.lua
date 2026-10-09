@@ -17,6 +17,8 @@ M.EXAMPLES = {
   {
     id = "hysteresis",
     code = table.concat({
+      "config(interval=10)",
+      "",
       "def loop():",
       "    gas = inp[\"petroleum-gas\"]",
       "    on = latch(\"pump\", gas < 1000, gas > 20000)",
@@ -39,20 +41,22 @@ M.EXAMPLES = {
   {
     id = "recipe",
     code = table.concat({
+      "config(interval=30)",
+      "",
       "def loop():",
-      "    out.clear()",
-      "    if inp[\"iron-gear-wheel\"] < 200:",
-      "        out[\"iron-gear-wheel\"] = 1",
+      "    out[\"iron-gear-wheel\"] = 1 if inp[\"iron-gear-wheel\"] < 200 else 0",
     }, "\n"),
   },
   {
     id = "each",
     code = table.concat({
-      "config(outputs=\"clear\")",
+      "config(interval=60)",
       "",
       "def loop():",
-      "    out.set(inp.where(\">\", 1000).each(\"-\", 1000))",
-      "    out[\"signal-A\"] = inp.where(\">\", 1000).count()",
+      "    surplus = inp.where(\">\", 1000)",
+      "    d = surplus.each(\"-\", 1000)",
+      "    d[\"signal-A\"] = surplus.count()",
+      "    out.set(d)",
     }, "\n"),
   },
   {

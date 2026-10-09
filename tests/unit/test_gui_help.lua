@@ -50,6 +50,18 @@ return {
       end
     end
   end },
+  { "příklady jdou dobrým příkladem: interval (kromě PID), žádné mazání výstupu každý tick", function()
+    local help = require("scripts.gui.help")
+    for _, ex in ipairs(help.EXAMPLES) do
+      if ex.id ~= "pid" then
+        A.truthy(ex.code:find("config%(interval=%d+%)"), ex.id .. ": config(interval=N)")
+      end
+      A.eq(ex.code:find('outputs="clear"', 1, true), nil, ex.id .. ": bez outputs=\"clear\"")
+      if ex.code:find("out.clear()", 1, true) then
+        A.truthy(ex.code:find("interval=60", 1, true), ex.id .. ": out.clear() jen s dlouhým intervalem")
+      end
+    end
+  end },
   { "tlačítko ? otevře nápovědu s kartami, křížek ji zavře", function()
     local t = setup()
     click(t, t.refs.help)
