@@ -5,10 +5,14 @@ require("scripts.metatables")
 local controller = require("scripts.controller")
 local lifecycle = require("scripts.lifecycle")
 local scheduler = require("scripts.scheduler")
+local indicator = require("scripts.indicator")
 local blueprint = require("scripts.blueprint")
 require("scripts.remote")
 
 local FILTERS = { { filter = "name", name = lifecycle.DATA.entity } }
+
+-- Stavová LED se překresluje jen při změně stavu (chyba, výpadek a obnova proudu z plánovače).
+scheduler.on_state_change = indicator.update
 
 script.on_init(function()
   storage.controllers = {}
@@ -48,6 +52,10 @@ script.on_event(defines.events.on_object_destroyed, function(event)
 end)
 
 script.on_event(defines.events.on_runtime_mod_setting_changed, controller.refresh_settings)
+
+for _, id in ipairs({ defines.events.on_player_rotated_entity, defines.events.on_player_flipped_entity }) do
+  script.on_event(id, function(event) lifecycle.on_rotated(event.entity) end)
+end
 
 script.on_event(defines.events.on_player_setup_blueprint, blueprint.on_setup)
 script.on_event(defines.events.on_entity_settings_pasted, blueprint.on_pasted)

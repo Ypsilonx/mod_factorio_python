@@ -81,4 +81,23 @@ return {
       end },
     },
   },
+  {
+    name = "stavová LED: běh bliká, pauza a chyba svítí, objekt LED existuje",
+    setup = function(ctx)
+      H.power(ctx)
+      ctx.p = H.pythonator(ctx, 1, 1, "n = 0\ndef loop():\n  global n\n  n += 1\n  if n == 30:\n    x = 1 / 0")
+    end,
+    steps = {
+      { ticks = 5, run = function(ctx)
+        H.eq(H.state(ctx.p).led, "run", "běží")
+        H.eq(#rendering.get_all_objects("Pythonator") > 0, true, "LED nakreslená")
+      end },
+      { ticks = 40, run = function(ctx)
+        H.eq(H.state(ctx.p).led, "error", "chyba")
+        remote.call("pyntr", "reset", ctx.p.unit_number)
+        remote.call("pyntr", "stop", ctx.p.unit_number)
+        H.eq(H.state(ctx.p).led, "pause", "pauza")
+      end },
+    },
+  },
 }

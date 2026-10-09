@@ -31,7 +31,7 @@ remote.add_interface("pyntr", {
     for name, value in pairs(ctl.globals) do globals[name] = R.repr(value) end
     return {
       code = ctl.code, running = ctl.running, error = ctl.error, compile_error = ctl.compile_error,
-      tick = ctl.tick, interval = ctl.interval, used = ctl.used, globals = globals,
+      tick = ctl.tick, interval = ctl.interval, used = ctl.used, globals = globals, led = ctl.led_state,
       outputs = { both = copy(ctl.out.both), red = copy(ctl.out.red), green = copy(ctl.out.green) },
       prints = copy(ctl.prints),
     }
@@ -47,7 +47,9 @@ remote.add_interface("pyntr", {
 
   --- ⏸ Pauza.
   stop = function(unit)
-    controller.stop(get(unit))
+    local ctl = get(unit)
+    controller.stop(ctl)
+    lifecycle.wake(ctl)
   end,
 
   --- ⟳ Reset. @return boolean
@@ -60,6 +62,9 @@ remote.add_interface("pyntr", {
 
   --- ⏭ Krok (jen při pauze). @return boolean
   step = function(unit)
-    return controller.step(get(unit), game.tick)
+    local ctl = get(unit)
+    local ok = controller.step(ctl, game.tick)
+    lifecycle.wake(ctl)
+    return ok
   end,
 })

@@ -1,6 +1,7 @@
 --- Životní cyklus budovy: stavba (vznik stavu a skrytých výstupů, kód z tagů), odstranění (úklid),
 --- smrt (kód do ducha), údržba po změně modů a probuzení do plánovače.
 local controller = require("scripts.controller")
+local indicator = require("scripts.indicator")
 local io = require("scripts.io")
 local scheduler = require("scripts.scheduler")
 
@@ -18,9 +19,11 @@ function M.is_ours(entity)
   return entity and entity.valid and entity.name == M.DATA.entity
 end
 
---- Naplánuje běžící kontrolér na příští tick (po nahrání kódu, Play, Resetu).
+--- Po změně stavu (nahrání kódu, Play, Pauza, Reset, Krok): naplánuje běžící kontrolér na příští tick
+--- a překreslí stavovou LED.
 function M.wake(ctl)
   if ctl.running and not ctl.error then scheduler.add(ctl.unit, game.tick + 1) end
+  indicator.update(ctl)
 end
 
 --- Nahraje kód do kontroléru; `running == false` ho po inicializaci nechá pozastavený.
@@ -47,8 +50,15 @@ end
 function M.remove(unit)
   local ctl = controller.get(unit)
   if not ctl then return end
+  if ctl.led and ctl.led.valid then ctl.led.destroy() end
   io.detach_outputs(ctl.outputs)
   controller.destroy(unit)
+end
+
+--- Otočení nebo převrácení budovy: LED se přesune na nové místo.
+function M.on_rotated(entity)
+  local ctl = M.is_ours(entity) and controller.get(entity.unit_number)
+  if ctl then indicator.update(ctl, true) end
 end
 
 --- Smrt budovy: duch dostane kód do tagů, aby ho roboti postavili i s programem.
@@ -81,6 +91,7 @@ function M.on_configuration_changed()
         ctl.outputs, ctl.wires = io.attach_outputs(ctl.entity, M.DATA.output), nil
         io.flush(ctl)
       end
+      indicator.update(ctl, true)
     end
   end
   scheduler.rebuild(game.tick)

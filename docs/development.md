@@ -95,3 +95,27 @@ nastavení a energie) → 31,2 (rychlé cesty překladače: `for … in x.items(
 
 Lokální rychlé měření jazyka bez hry: `lua tools/bench-lang.lua` (µs na loop() pro sadu programů,
 napodobené API – čísla jen pro porovnání změn).
+
+## Grafika (Blender 5.2, `blender/`)
+Skripty jsou zdroj pravdy, výstupy (PNG, `prototypes/graphics_data.lua`) se ručně neupravují.
+- Spuštění v běžícím Blenderu přes MCP: `exec` souboru `blender/build_sprites.py` s `PYNTR_STAGE` = `model` (jen scéna), `preview` (náhledy do `blender/renders/`, gitignored) nebo `render` (sprity do modu, ~2 min).
+- Headless: `blender -b --factory-startup --python blender/build_sprites.py` (výchozí fáze `render`).
+- Výstupy: `graphics/entity/pythonator.png` + `-shadow.png` (4 směry N, E, S, W vedle sebe, 224 px = 3,5 dlaždice, `scale = 0.5`), `pythonator-led.png` (záře LED, 2 snímky), `graphics/icons/pythonator.png` (64), `graphics/technology/pythonator.png` (256), `thumbnail.png` (144), `prototypes/graphics_data.lua` (body drátů a poloha LED promítnuté stejnou kamerou).
+- Projekce: ortografická kamera pod 45°, model natažený v ose Y o √2 (čtvercová dlaždice jako ve hře).
+
+| Co ladit | Kde |
+|---|---|
+| Kamera, světla, šířka snímku | `blender/camera.toml` |
+| Rozměry a polohy součástek, drátky, LCD, logo | `blender/pyntr_layout.py` (sdílí model i textura desky) |
+| Materiály a míra prachu | `blender/pyntr_materials.py` (parametr `dust`), patina `blender/pyntr_patina.py` |
+| Textura plošného spoje (barvy, šířky, semínko cest) | `blender/pyntr_pcb.py` (`MASK`, `TRACE_W`, `SEED` …) |
+| Logo Pythonu (tvar, barvy, svit) | `blender/pyntr_logo.py` (`SNAKE`, `EYE_POS`, `GLOW`) – vlastní stylizace, ochrannou známku PSF ověřit před publikací |
+| Záběr ikon | `ICON_ORTHO`, `ICON_SHIFT` v `blender/build_sprites.py` |
+| Barvy stavové LED | `COLORS` v `Pythonator/scripts/indicator.lua` |
+| Rytmus blikání | `BLINK`, `ANIMATION_SPEED` v `Pythonator/prototypes/led.lua` |
+
+### Ruční kontrola grafiky ve hře
+- [ ] Budova ve všech 4 směrech (R): sedí na mřížce 2×2, stín doprava dolů, LCD vzadu.
+- [ ] Dráty: červený/zelený se připojí na šroubky vstupní (u výstupu kombinátoru vstup = strana „vstupu“ při najetí myší) a výstupní svorkovnice ve všech směrech; stín drátu sedí.
+- [ ] Stavová LED: bez kódu zhasnutá, po nahrání kódu bliká zeleně, `stop` = žlutá, chyba = červená; po otočení budovy LED „sedí“ na objímce.
+- [ ] Ikona v inventáři, ve stromu výzkumu a thumbnail v seznamu modů.

@@ -1,6 +1,7 @@
 -- Prototypy nezávislé na jiných modech (recept a výzkum vznikají v data-final-fixes.lua).
 require("prototypes.entity")
 require("prototypes.hidden")
+require("prototypes.led")
 
 --- Jména prototypů pro runtime (hledat podle nich, ne podle prefixu – overhaul mody přidávají „pyntr-…-pyvoid“).
 data:extend({

@@ -23,7 +23,8 @@ if tech then
     {
       type = "technology",
       name = NAME,
-      icons = data.raw.item[NAME].icons,
+      icon = "__Pythonator__/graphics/technology/pythonator.png",
+      icon_size = 256,
       effects = { { type = "unlock-recipe", recipe = NAME } },
       prerequisites = tech.prerequisites,
       unit = tech.unit,

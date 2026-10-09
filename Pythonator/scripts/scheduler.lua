@@ -7,6 +7,9 @@ local M = {}
 --- Za kolik ticků se znovu zkusí kontrolér bez proudu. Laditelná hodnota.
 M.POWER_RETRY_TICKS = 60
 
+--- Háček při změně stavu kontroléru (chyba, výpadek a obnova proudu) – control.lua sem dá překreslení LED.
+M.on_state_change = function(_) end
+
 --- Plán ve storage.
 local function schedule()
   storage.schedule = storage.schedule or {}
@@ -41,13 +44,24 @@ end
 local function process(ctl, tick)
   if not ctl.running or ctl.error or not ctl.entity.valid then return end
   if not powered(ctl) then
-    ctl.outage_since = ctl.outage_since or tick
+    if not ctl.outage_since then
+      ctl.outage_since = tick
+      M.on_state_change(ctl)
+    end
     M.add(ctl.unit, tick + M.POWER_RETRY_TICKS)
     return
   end
-  local lost = ctl.outage_since and (tick - ctl.outage_since) or 0
-  ctl.outage_since = nil
-  if controller.run_loop(ctl, tick, lost) then M.add(ctl.unit, tick + ctl.interval) end
+  local lost = 0
+  if ctl.outage_since then
+    lost = tick - ctl.outage_since
+    ctl.outage_since = nil
+    M.on_state_change(ctl)
+  end
+  if controller.run_loop(ctl, tick, lost) then
+    M.add(ctl.unit, tick + ctl.interval)
+  else
+    M.on_state_change(ctl)
+  end
 end
 
 --- Zpracuje kontroléry naplánované na tento tick (on_tick).
