@@ -6,5 +6,6 @@ Každý tick: načíst vstupy → `loop()` → zapsat výstupy.
 - Návrh: `docs/superpowers/specs/2026-10-09-pythonator-design.md`
 - Uživatelská příručka: `docs/user-guide.md`
 - Vývoj a testy: `docs/development.md`
+- Popis pro mod portál (EN): `docs/mod-portal.md`, publikace: `docs/development.md` → Publikace
 
 Rychlý start vývoje: `bash tools/run-unit.sh`
