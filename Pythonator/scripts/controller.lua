@@ -135,6 +135,11 @@ local function check_memory(ctl)
   return true
 end
 
+--- Zapíše výstupy na dráty, pokud má kontrolér skryté výstupy (v jednotkových testech bez nich nemusí).
+local function flush(ctl)
+  if ctl.outputs then io.flush(ctl) end
+end
+
 --- Vyprázdní tabulky výstupů (tabulky zůstávají – drží je zapisovací objekty instance).
 local function clear_outputs(ctl)
   for _, store in pairs(ctl.out) do
@@ -164,7 +169,9 @@ function M.set_code(ctl, source)
   ctl.outputs_mode = program.config.outputs
   ctl.running = true
   local entry = build(ctl, program)
+  -- Vymazané výstupy jdou na drát hned; co nastaví init, také (init může výstupy zapsat)
   if run(ctl, entry, "init") then check_memory(ctl) end
+  flush(ctl)
   return true
 end
 
@@ -187,6 +194,7 @@ function M.run_loop(ctl, game_tick)
   for _, source in pairs(entry.sources) do source.reset() end
   if ctl.outputs_mode == "clear" then clear_outputs(ctl) end
   if not run(ctl, entry, "loop") then return false end
+  flush(ctl)
   if ctl.tick - ctl.memory_checked >= M.MEMORY_CHECK_TICKS then return check_memory(ctl) end
   return true
 end

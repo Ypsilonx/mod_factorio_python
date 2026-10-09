@@ -165,6 +165,16 @@ return {
     A.eq(ctl.running, false, "po chybě zůstane pozastavený")
     A.eq(controller.start(ctl), true, "play")
   end },
+  { "výstupy jdou na dráty po loop() i po nahrání kódu (vymazání)", function()
+    local controller, ctl = setup()
+    ctl.outputs = { red = G.output(), green = G.output() }
+    load(controller, ctl, "def loop():\n  out['signal-A'] = 5\n  out_green['signal-B'] = 1")
+    controller.run_loop(ctl, 1)
+    A.eq(ctl.outputs.red.signals()["signal-A"], 5, "červený")
+    A.eq(ctl.outputs.green.signals()["signal-B"], 1, "zelený")
+    load(controller, ctl, "def loop(): pass")
+    A.eq(next(ctl.outputs.red.signals()), nil, "po nahrání vymazáno na drátě")
+  end },
   { "reset bez kódu nic nedělá", function()
     local controller, ctl = setup()
     A.eq(controller.reset(ctl), false, "není co resetovat")

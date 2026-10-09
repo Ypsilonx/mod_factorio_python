@@ -48,4 +48,32 @@ function M.entity(unit)
   return e
 end
 
+--- Falešný skrytý konstantní kombinátor, který počítá volání API.
+function M.output()
+  local o = { valid = true, calls = 0, sections = {} }
+  local cb = { sections_count = 0 }
+  function cb.add_section()
+    cb.sections_count = cb.sections_count + 1
+    local section = { slots = {} }
+    function section.set_slot(i, filter) o.calls = o.calls + 1; section.slots[i] = filter end
+    function section.clear_slot(i) o.calls = o.calls + 1; section.slots[i] = nil end
+    o.sections[cb.sections_count] = section
+    return section
+  end
+  function cb.get_section(i) return o.sections[i] end
+  function o.get_or_create_control_behavior() return cb end
+  --- Výstup jako mapa jméno → hodnota (přes všechny sekce).
+  function o.signals()
+    local out = {}
+    for _, section in ipairs(o.sections) do
+      for _, f in pairs(section.slots) do
+        local key = f.value.name .. (f.value.quality ~= "normal" and ("@" .. f.value.quality) or "")
+        out[key] = f.min
+      end
+    end
+    return out
+  end
+  return o
+end
+
 return M
