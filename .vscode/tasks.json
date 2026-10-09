@@ -1,0 +1,10 @@
+{
+  "version": "2.0.0",
+  "options": { "shell": { "executable": "C:\\Program Files\\Git\\bin\\bash.exe", "args": ["-c"] } },
+  "tasks": [
+    { "label": "Unit testy", "type": "shell", "command": "tools/run-unit.sh", "group": "test", "problemMatcher": [] },
+    { "label": "Integrační testy (vanilla)", "type": "shell", "command": "tools/run-tests.sh vanilla", "group": "test", "problemMatcher": [] },
+    { "label": "Integrační testy (Space Age)", "type": "shell", "command": "tools/run-tests.sh space-age", "group": "test", "problemMatcher": [] },
+    { "label": "Výkonový test", "type": "shell", "command": "tools/run-perf.sh", "group": "test", "problemMatcher": [] }
+  ]
+}
