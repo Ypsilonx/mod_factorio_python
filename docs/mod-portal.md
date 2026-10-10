@@ -1,5 +1,11 @@
 # Pythonator
 
+> **⚠ Early development – testing release.** Pythonator is new and still being tested. Expect bugs, rough edges
+> and possible changes to the language or behaviour between versions (keep a backup of important saves).
+> **Your feedback is very welcome** – bug reports, ideas and programs that did not work as expected help the most.
+> Please write in the **Discussion** tab here or open an issue on
+> [GitHub](https://github.com/Ypsilonx/mod_factorio_python/issues).
+
 **A programmable circuit controller you script in a subset of Python.** Replace tangled combinator networks
 with readable code: hysteresis, sequences, PID control, filtering hundreds of signals – in a few lines, with
 deterministic timing.

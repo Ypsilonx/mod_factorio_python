@@ -4,6 +4,6 @@
   "title": "Pythonator",
   "author": "Ypsilonx",
   "factorio_version": "2.0",
-  "description": "Programmable circuit controller scripted in a Python subset. Deterministic timing: read inputs, run loop(), write outputs – every tick.",
+  "description": "[Early development – feedback welcome] Programmable circuit controller scripted in a Python subset. Deterministic timing: read inputs, run loop(), write outputs – every tick.",
   "dependencies": ["base >= 2.0.0"]
 }

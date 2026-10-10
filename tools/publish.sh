@@ -18,7 +18,7 @@ CATEGORY="content"
 LICENSE="default_mit"
 TAGS=(circuit-network)
 #: Odkaz na zdrojový kód (GitHub); prázdný = na portál se nepošle.
-SOURCE_URL="${PYNTR_SOURCE_URL:-}"
+SOURCE_URL="${PYNTR_SOURCE_URL:-https://github.com/Ypsilonx/mod_factorio_python}"
 
 MODE="version"
 DRY=0
