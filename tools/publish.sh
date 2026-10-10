@@ -85,10 +85,15 @@ check() {
 
 #: Údaje modu na portálu (titul, shrnutí, popis, kategorie, tagy, licence).
 edit_details() {
-  local args=(-F "mod=$MOD" -F "title=$TITLE" -F "summary=$SUMMARY" -F "category=$CATEGORY" -F "license=$LICENSE"
+  # Shrnutí přes soubor: curl.exe dostane argumenty v kódové stránce Windows a ne-ASCII znaky (–) rozbije.
+  local summary_file
+  summary_file="$(mktemp)"
+  printf "%s" "$SUMMARY" > "$summary_file"
+  local args=(-F "mod=$MOD" -F "title=$TITLE" -F "summary=<$(cygpath -m "$summary_file")" -F "category=$CATEGORY" -F "license=$LICENSE"
     "${SOURCE_ARGS[@]}" -F "description=<$(cygpath -m "$ROOT/docs/mod-portal.md")")
   for tag in "${TAGS[@]}"; do args+=(-F "tags=$tag"); done
   check "Úprava údajů" "$(curl -sS -H "Authorization: Bearer $KEY" "${args[@]}" "$API/v2/mods/edit_details")"
+  rm -f "$summary_file"
   echo "Údaje a popis na portálu nastaveny."
 }
 
