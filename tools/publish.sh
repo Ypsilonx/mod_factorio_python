@@ -73,7 +73,10 @@ fi
 
 #: Pole se zdrojem kódu jen tehdy, když je SOURCE_URL vyplněná.
 SOURCE_ARGS=()
+#: init_publish nezná pole homepage (portál vrátí „Unknown field“) – to nastaví až edit_details.
+PUBLISH_SOURCE_ARGS=()
 if [ -n "$SOURCE_URL" ]; then SOURCE_ARGS=(-F "source_url=$SOURCE_URL" -F "homepage=$SOURCE_URL"); fi
+if [ -n "$SOURCE_URL" ]; then PUBLISH_SOURCE_ARGS=(-F "source_url=$SOURCE_URL"); fi
 
 #: Hodnota pole „success“ v odpovědi portálu, jinak ukončí skript s chybou.
 check() {
@@ -98,7 +101,7 @@ URL="$(printf '%s' "$INIT" | grep -oE '"upload_url" *: *"[^"]+"' | sed -E 's/.*"
 [ -z "$URL" ] && { echo "Založení nahrávání selhalo: $INIT"; exit 1; }
 if [ "$MODE" = "new" ]; then
   check "Zveřejnění modu" "$(curl -sS -F "file=@$(cygpath -m "$ZIP")" -F "category=$CATEGORY" -F "license=$LICENSE" \
-    "${SOURCE_ARGS[@]}" -F "description=<$(cygpath -m "$ROOT/docs/mod-portal.md")" "$URL")"
+    "${PUBLISH_SOURCE_ARGS[@]}" -F "description=<$(cygpath -m "$ROOT/docs/mod-portal.md")" "$URL")"
   echo "Mod zveřejněn: https://mods.factorio.com/mod/$MOD"
 else
   check "Nahrání verze" "$(curl -sS -F "file=@$(cygpath -m "$ZIP")" "$URL")"
