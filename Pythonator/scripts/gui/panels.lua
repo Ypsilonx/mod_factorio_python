@@ -95,7 +95,10 @@ function M.rows_signals(ps, max)
     local key, value = ps[i][1], ps[i][2]
     local sid = res:resolve(key)
     local sprite = sid and SPRITE_TYPE[sid.type] and (SPRITE_TYPE[sid.type] .. "/" .. sid.name) or "utility/questionmark"
-    rows[i] = { sprite = sprite, number = value, tooltip = key .. " = " .. tostring(value) }
+    local tooltip = key .. " = " .. tostring(value)
+    -- nula na síti neexistuje: v panelu je jen výslovně zapsaný výstup, který na drát nejde
+    if value == 0 then tooltip = { "", tooltip, "\n", { "pyntr-gui.output-zero" } } end
+    rows[i] = { sprite = sprite, number = value, tooltip = tooltip }
   end
   return rows, math.max(#ps - max, 0)
 end
@@ -214,10 +217,11 @@ local function fill_table(tbl, rows)
   end
 end
 
---- Dvojice {klíč, hodnota} mapy seřazené podle klíče.
-local function sorted_pairs(map)
+--- Dvojice {klíč, hodnota} mapy seřazené podle klíče; klíče z `zero` (klíč → true) přibudou s hodnotou 0.
+local function sorted_pairs(map, zero)
   local ps = {}
   for k, v in pairs(map or {}) do ps[#ps + 1] = { k, v } end
+  for k in pairs(zero or {}) do ps[#ps + 1] = { k, 0 } end
   table.sort(ps, function(a, b) return R.strcmp(a[1], b[1]) < 0 end)
   return ps
 end
@@ -254,10 +258,11 @@ function M.refresh(refs, ctl)
   fill_signals(refs.in_red, ps, total, shown_of(refs, "in_red"))
   ps, total = input_pairs(ctl.entity, W.combinator_input_green)
   fill_signals(refs.in_green, ps, total, shown_of(refs, "in_green"))
-  -- skutečně odeslaný stav drátu (po chybě uprostřed loop() se liší od ctl.out)
+  -- skutečně odeslaný stav drátu (po chybě uprostřed loop() se liší od ctl.out) a výslovně zapsané nuly
   local wires = ctl.wires or {}
-  fill_signals(refs.out_red, sorted_pairs(wires.red and wires.red.sent), nil, shown_of(refs, "out_red"))
-  fill_signals(refs.out_green, sorted_pairs(wires.green and wires.green.sent), nil, shown_of(refs, "out_green"))
+  local red, green = wires.red or {}, wires.green or {}
+  fill_signals(refs.out_red, sorted_pairs(red.sent, red.zero), nil, shown_of(refs, "out_red"))
+  fill_signals(refs.out_green, sorted_pairs(green.sent, green.zero), nil, shown_of(refs, "out_green"))
   fill_table(refs.globals, M.rows_globals(ctl.globals))
   fill_table(refs.lib, M.rows_elements(ctl.globals[elements.STATE]))
   if refs.log_pane.visible then

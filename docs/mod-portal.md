@@ -58,6 +58,7 @@ The editor is read-only while running. Errors show the line in red; click the er
 **Writing outputs** (the value is truncated towards zero and wraps to int32):
 - `out[k] = v` – to both wires
 - `out_red[k] = v`, `out_green[k] = v` – one wire only; on the wire it adds up with `out`
+- writing `0` shows the signal as 0 in the output panel, but nothing goes on the wire – the circuit network never carries zero (a condition `A = 0` is true without the signal anyway)
 - `out.clear()` – clears the outputs of that object (`out_red.clear()` only red)
 
 **Signal keys:**

@@ -30,8 +30,10 @@ end
 --- Vytvoří zapisovací objekt nad úložištěm kanonický klíč → int32.
 --- @param store table úložiště (tatáž tabulka zůstává, clear ji jen vyprázdní)
 --- @param resolver table z signals.new_resolver
-function M.writer(store, resolver)
-  return setmetatable({ store = store, resolver = resolver, ccache = {} }, WriterMT)
+--- @param zeros table|nil klíče, kterým program výslovně zapsal 0 (klíč → true): na drát nejdou (síť nulu
+--- nenese), jen do panelu výstupů. Tatáž tabulka zůstává jako u `store`.
+function M.writer(store, resolver, zeros)
+  return setmetatable({ store = store, resolver = resolver, ccache = {}, zeros = zeros or {} }, WriterMT)
 end
 
 --- Dvojice (klíč, hodnota) všech nenulových signálů objektu.
@@ -116,18 +118,24 @@ local function signal_value(value)
 end
 
 --- Zapíše kanonický klíč; `changed` čte hostitel: výstupy jdou na drát jen po skutečné změně
---- (program často každý tick zapíše tytéž hodnoty).
+--- (program často každý tick zapíše tytéž hodnoty). Zápis nuly (x = nil) si klíč poznamená v `zeros`.
 local function store_set(obj, c, x)
   if obj.store[c] ~= x then
     obj.store[c] = x
+    obj.changed = true
+  end
+  local zero = x == nil or nil
+  if obj.zeros[c] ~= zero then
+    obj.zeros[c] = zero
     obj.changed = true
   end
 end
 
 local writer_methods = {
   clear = function(obj)
-    if next(obj.store) then obj.changed = true end
+    if next(obj.store) or next(obj.zeros) then obj.changed = true end
     for k in pairs(obj.store) do obj.store[k] = nil end
+    for k in pairs(obj.zeros) do obj.zeros[k] = nil end
     return R.None
   end,
   --- out.set(d): výstupy nahradí sadou d. Nová sada se sestaví celá předem (d může být out sám) a do
@@ -136,16 +144,22 @@ local writer_methods = {
     if n ~= 1 then R.raise("arg-count", "set", 1, n) end
     local keys, vals = source_view("set", d)
     R.charge(#keys)
-    local want = {}
+    local want, want_zero = {}, {}
     for i = 1, #keys do
       local k = keys[i]
-      want[canon(obj, k)] = signal_value(vals[k])
+      local c, x = canon(obj, k), signal_value(vals[k])
+      want[c] = x
+      if x == nil then want_zero[c] = true end
     end
-    local store = obj.store
+    local store, zeros = obj.store, obj.zeros
     for c in pairs(store) do
       if want[c] == nil then store[c] = nil; obj.changed = true end
     end
+    for c in pairs(zeros) do
+      if not want_zero[c] then zeros[c] = nil; obj.changed = true end
+    end
     for c, x in pairs(want) do store_set(obj, c, x) end
+    for c in pairs(want_zero) do store_set(obj, c, nil) end
     return R.None
   end,
   --- out.add(d): k výstupům přičte sadu d.

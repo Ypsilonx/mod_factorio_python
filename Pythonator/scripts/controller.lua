@@ -72,6 +72,7 @@ function M.create(entity)
     compile_error = nil,  -- poslední neúspěšný překlad (starý program běží dál)
     globals = {},
     out = { both = {}, red = {}, green = {} },
+    out_zero = { both = {}, red = {}, green = {} },  -- výslovně zapsané nuly (jen pro panel výstupů)
     tick = 0,
     last_run = nil,
     memory_checked = 0,
@@ -113,10 +114,13 @@ end
 --- @return table|nil cache záznam { inst, IO, sources }
 local function build(ctl, program)
   local res = resolver.get()
+  -- Save z verze bez evidence nul tabulku nemá; build běží až v ticku, kdy se storage měnit smí.
+  ctl.out_zero = ctl.out_zero or { both = {}, red = {}, green = {} }
+  local zero = ctl.out_zero
   local sources, IO = {}, {
-    out = signal_io.writer(ctl.out.both, res),
-    out_red = signal_io.writer(ctl.out.red, res),
-    out_green = signal_io.writer(ctl.out.green, res),
+    out = signal_io.writer(ctl.out.both, res, zero.both),
+    out_red = signal_io.writer(ctl.out.red, res, zero.red),
+    out_green = signal_io.writer(ctl.out.green, res, zero.green),
     print = function(line) add_print(ctl, line) end,
     tick = 0, game_tick = 0, dt = 0,
   }
@@ -179,14 +183,16 @@ local function flush(ctl, entry, force)
   return ok
 end
 
---- Vyprázdní tabulky výstupů (tabulky zůstávají – drží je zapisovací objekty instance).
+--- Vyprázdní tabulky výstupů i evidenci zapsaných nul (tabulky zůstávají – drží je zapisovací objekty instance).
 --- @return boolean něco bylo nastavené
 local function clear_outputs(ctl)
   local any = false
-  for _, store in pairs(ctl.out) do
-    for k in pairs(store) do
-      store[k] = nil
-      any = true
+  for _, stores in ipairs({ ctl.out, ctl.out_zero or {} }) do
+    for _, store in pairs(stores) do
+      for k in pairs(store) do
+        store[k] = nil
+        any = true
+      end
     end
   end
   return any

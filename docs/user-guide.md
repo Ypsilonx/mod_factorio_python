@@ -50,7 +50,7 @@ překladem, nahraný program se nezmění.
 | Zápis | Význam |
 |---|---|
 | `inp[k]`, `red[k]`, `green[k]` | vstup z obou drátů, jen z červeného, jen ze zeleného. Chybějící signál čte 0. |
-| `out[k] = v`, `out_red[k]`, `out_green[k]` | výstup na oba dráty nebo jen na jeden |
+| `out[k] = v`, `out_red[k]`, `out_green[k]` | výstup na oba dráty nebo jen na jeden. Zapsaná 0 se ukáže v panelu výstupů, na drát ale nejde – obvodová síť nulu nepřenáší (podmínka `A = 0` je splněná i bez signálu). |
 | `"iron-plate"`, `"iron-plate@rare"`, `"recipe:iron-plate"`, `[item=iron-plate]` | klíče signálů (kvalita, typ, ikona) |
 | `for k, v in inp.items()`, `k in inp`, `len(inp)`, `out.clear()` | procházení signálů |
 

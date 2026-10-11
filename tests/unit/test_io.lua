@@ -113,4 +113,18 @@ return {
     A.eq(ctl.outputs.red.calls, 0, "nic")
     A.eq(ctl.outputs.green.signals()["signal-A"], 1, "druhý drát funguje")
   end },
+  { "výslovně zapsaná nula: na drát nejde, stav drátu ji eviduje; nenulový součet ji přebije", function()
+    local io, ctl = setup()
+    ctl.out_zero = { both = { ["signal-A"] = true }, red = {}, green = { ["signal-B"] = true } }
+    ctl.out.red["signal-A"] = 3
+    io.flush(ctl)
+    A.eq(ctl.outputs.green.calls, 0, "zelený drát: nic se neposílá")
+    A.eq(ctl.wires.green.zero["signal-A"], true, "nula z out na zeleném")
+    A.eq(ctl.wires.green.zero["signal-B"], true, "nula z out_green")
+    A.eq(ctl.wires.red.zero, nil, "červený: out_red A=3 nulu přebije")
+    A.eq(ctl.outputs.red.signals()["signal-A"], 3, "červený A")
+    ctl.out_zero = nil
+    io.flush(ctl)
+    A.eq(ctl.wires.green.zero, nil, "starý save bez evidence nul")
+  end },
 }

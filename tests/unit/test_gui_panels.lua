@@ -65,6 +65,17 @@ return {
     A.eq(r.globals.children[2].caption, "1", "globál n")
     A.eq(r.log.children[#r.log.children].caption, "n 1", "poslední řádek logu")
   end },
+  { "výslovně zapsaná nula: v panelu výstupů jako 0 s vysvětlením, na drát nejde", function()
+    local t = setup("def loop():\n  out['signal-A'] = 0\n  out_green['signal-B'] = 2")
+    t.controller.run_loop(t.ctl, 1)
+    t.events.on_refresh()
+    local r = t.refs
+    A.eq(#r.out_red.children, 1, "červený: jen nula")
+    A.eq(r.out_red.children[1].number, 0, "hodnota 0")
+    A.eq(r.out_red.children[1].tooltip[4][1], "pyntr-gui.output-zero", "tooltip vysvětlí")
+    A.eq(#r.out_green.children, 2, "zelený: nula a B")
+    A.eq(t.ctl.outputs.red.signals()["signal-A"], nil, "na drátě nic")
+  end },
   { "výstupy po chybě ukazují stav drátu, ne rozepsané výstupy programu", function()
     local t = setup("n = 0\ndef loop():\n  global n\n  n += 1\n  out['signal-A'] = n\n  if n == 2:\n    x = 1 // 0")
     t.controller.run_loop(t.ctl, 1)

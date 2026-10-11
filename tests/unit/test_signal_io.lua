@@ -74,10 +74,34 @@ return {
     A.eq(out.changed, true, "smazání nulou")
     out.changed = nil
     R.method(out, "clear")
+    A.eq(out.changed, true, "clear zapsané nuly (zmizí z panelu)")
+    out.changed = nil
+    R.method(out, "clear")
     A.eq(out.changed, nil, "clear prázdného")
     R.setitem(out, "signal-B", 1)
     out.changed = nil
     R.method(out, "clear")
     A.eq(out.changed, true, "clear neprázdného")
+  end },
+  { "výslovně zapsaná nula: evidence v zeros, sémantika jazyka beze změny", function()
+    local store, zeros = {}, {}
+    local res = signals.new_resolver(fake())
+    local out = signal_io.writer(store, res, zeros)
+    R.setitem(out, "signal-A", 0)
+    A.eq(zeros["signal-A"], true, "nula poznamenaná")
+    A.eq(out.changed, true, "nová nula = změna (panel)")
+    A.eq(store["signal-A"], nil, "do úložiště nejde")
+    A.eq(R.contains(out, "signal-A"), false, "in"); A.eq(R.builtins.len(out), 0, "len")
+    out.changed = nil
+    R.setitem(out, "signal-A", 0)
+    A.eq(out.changed, nil, "opakovaná nula beze změny")
+    R.setitem(out, "signal-A", 4)
+    A.eq(zeros["signal-A"], nil, "nenulový zápis nulu ruší")
+    R.method(out, "add", R.dict({ "signal-A", -4 }, 2))
+    A.eq(zeros["signal-A"], true, "add s výsledkem 0")
+    R.method(out, "set", R.dict({ "signal-B", 0, "signal-S", 2 }, 4))
+    A.eq(zeros["signal-A"], nil, "set nahradí i nuly"); A.eq(zeros["signal-B"], true, "nula ze set")
+    R.method(out, "clear")
+    A.eq(next(zeros), nil, "clear smaže i nuly")
   end },
 }

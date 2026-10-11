@@ -101,12 +101,30 @@ local function flush_wire(out, state, want)
   return true
 end
 
+--- Klíče výslovně zapsané jako 0 (v out nebo out_red/out_green), které na drát nejdou – součet je nenese.
+--- Síť nulu nepřenáší; seznam slouží jen panelu výstupů.
+--- @return table|nil klíč → true, nil = žádná nula (bez alokace v běžném případě)
+local function zero_keys(both, single, want)
+  local zero
+  for _, set in ipairs({ both, single }) do
+    for k in pairs(set) do
+      if want[k] == nil then
+        zero = zero or {}
+        zero[k] = true
+      end
+    end
+  end
+  return zero
+end
+
 --- Zapíše výstupy kontroléru na dráty (jen změny proti minulému zápisu). Neplatný výstup se přeskočí –
 --- obnoví ho údržba budovy a stav jeho drátu se pak pošle celý znovu.
---- @param ctl table kontrolér s ctl.outputs = { red, green } a ctl.out = { both, red, green }
+--- @param ctl table kontrolér s ctl.outputs = { red, green }, ctl.out = { both, red, green }
+---   a ctl.out_zero (stejné členění, výslovně zapsané nuly; ve starém savu do prvního běhu chybí)
 --- @return boolean false = výstupy se nevešly (hra nepřidala další sekci skrytého kombinátoru)
 function M.flush(ctl)
   ctl.wires = ctl.wires or {}
+  local zeros = ctl.out_zero
   local ok = true
   for wire, out in pairs(ctl.outputs) do
     local state = ctl.wires[wire]
@@ -114,7 +132,11 @@ function M.flush(ctl)
       state = { sent = {}, slot = {}, free = {}, top = 0 }
       ctl.wires[wire] = state
     end
-    if out.valid and not flush_wire(out, state, M.desired(ctl.out.both, ctl.out[wire])) then ok = false end
+    if out.valid then
+      local want = M.desired(ctl.out.both, ctl.out[wire])
+      if not flush_wire(out, state, want) then ok = false end
+      state.zero = zeros and zero_keys(zeros.both, zeros[wire], want)
+    end
   end
   return ok
 end
