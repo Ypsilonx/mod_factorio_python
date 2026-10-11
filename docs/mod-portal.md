@@ -17,7 +17,7 @@ now:     one Pythonator:   out["signal-S"] = 1 if inp["petroleum-gas"] < 1000 el
 
 ## Getting started
 
-1. Research **Pythonator** (after circuit network and advanced circuits), craft it and place it.
+1. Research **Pythonator** (after circuit network and advanced circuits), craft it and place it. To face it east or west, rotate it with R while it is still in hand – once placed it only flips 180°, like any arithmetic combinator.
 2. Connect wires like to an arithmetic combinator: the input side reads, the output side sends.
 3. Click the building, write a program in the editor and press **▶**.
 

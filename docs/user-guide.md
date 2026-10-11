@@ -6,7 +6,7 @@ Zpoždění je přesně 1 tick, stejně jako u kombinátoru.
 
 ## Jak začít
 
-1. Vyzkoumej **Pythonator** (po obvodové síti a pokročilých obvodech), vyrob ho a postav.
+1. Vyzkoumej **Pythonator** (po obvodové síti a pokročilých obvodech), vyrob ho a postav. Na bok (východ, západ) ho otoč klávesou R ještě v ruce před položením – postavený se jako každý aritmetický kombinátor otáčí jen o 180°.
 2. Připoj dráty: vstupní strana čte, výstupní posílá signály (jako aritmetický kombinátor).
 3. Klikni na budovu. Otevře se okno s editorem, napiš program a stiskni **▶**.
 
