@@ -1,4 +1,13 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.1.1
+Date: 2026-10-11
+  Bugfixes:
+    - Circuit wires now attach to the correct terminals in every rotation (they stayed at the north position).
+    - Status LED is drawn at the correct position in every rotation.
+  Changes:
+    - An output explicitly written as 0 is shown in the output panel. The circuit network never carries zero, so
+      nothing is sent on the wire, same as with a constant combinator.
+---------------------------------------------------------------------------------------------------
 Version: 0.1.0
 Date: 2026-10-09
   Features:
