@@ -193,7 +193,9 @@ def layer(scene, name, mode, parts, ground):
 
 def game_points(scene, camera, root, sun, frame_tiles):
     """Body drátů (vstup, výstup) a poloha LED pro aktuální natočení modelu v souřadnicích hry."""
-    bpy.context.view_layer.update()
+    # Headless je kontextová scéna výchozí "Scene", ne naše – context.view_layer by matice nepřepočítal
+    # a body by zůstaly pro všechny směry podle severu.
+    scene.view_layers[0].update()
     m = root.matrix_world
     top = L.PCB_TOP + L.TERMINAL_BLOCK[2] + 0.015
 
