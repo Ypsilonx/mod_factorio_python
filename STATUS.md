@@ -11,6 +11,8 @@ Aktualizováno: 2026-10-17
 - Verze 0.1.1 vydaná na portálu (2026-10-11): jazyk, budova, GUI editor, knihovna kombinátorů, grafika z Blenderu.
 - Testy zelené (2026-10-17): unit 315/0, integrační vanilla 33/0 (2 skip).
 - Integrační runner generuje povrch podle počtu testů (nové testy nevyjedou z mapy).
+- Audit dokumentace (2026-10-17): CLAUDE.md, STATUS.md, ROADMAP.md, spec v `docs/specs/`, hotové plány smazány;
+  obecná ponaučení převzata do skillu `factorio-mod`.
 
 ## Rozpracováno
 
