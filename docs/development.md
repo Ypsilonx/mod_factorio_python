@@ -2,7 +2,6 @@
 
 ## Prostředí
 - Factorio 2.0 (hra běží na Lua 5.2), lokální testy v Lua 5.3 (`lua` v PATH), CPython přes `uv` jen pro `tools/gen-conformance.sh`.
-- Skripty `tools/*.sh` spouštět v Git Bash.
 - Editor (sumneko): `.luarc.json` nastavuje runtime Lua 5.2 – jinak hlásí falešně `Undefined global bit32`.
 
 ## Struktura jazyka (`Pythonator/scripts/lang/`)
@@ -70,7 +69,7 @@ Akce Play/Pauza/Reset/Krok a pohled na stav (`actions.view` → co zobrazit a po
 ## Determinismus (multiplayer)
 - Kód jazyka nesmí záviset na locale: řetězce se porovnávají a řadí po bajtech (`R.strcmp`), lexer používá jen ASCII třídy znaků (`[A-Za-z0-9_]`, ne `%a/%w`), `upper/lower` mění jen ASCII a čísla se formátují s tečkou i při locale s desetinnou čárkou. Hlídají to testy v `tests/unit/test_hardening.lua` s českým locale.
 
-## Ověřená rizika (spike, plán 2 / Task 1, Factorio 2.0.77)
+## Ověřená rizika (prototyp před stavbou budovy, Factorio 2.0.77)
 | Riziko | Výsledek | Důsledek |
 |---|---|---|
 | Budova 2×2 z `arithmetic-combinator` | ✓ rotace, dráty, vstup/výstup fungují (stejně to dělá fCPU: collision ±0,65, selection ±1) | prototyp podle specu |
@@ -193,14 +192,14 @@ Skripty jsou zdroj pravdy, výstupy (PNG, `prototypes/graphics_data.lua`) se ru�
 - [ ] Displej: bez kódu tmavý, za běhu rolují řádky kódu, při pauze text stojí, při chybě stojí červeně, bez proudu zhasne; po otočení (sever, východ, západ) sedí na obrazovce, na jihu je vidět jen zadní strana displeje. Rychlost rolování (`LCD_SPEED`) a blikání LED odpovídá záměru (LED ~1× za sekundu).
 - [ ] Ikona v inventáři, ve stromu výzkumu a thumbnail v seznamu modů.
 
-## Známá omezení a odložené drobnosti (review plánu 2)
+## Známá omezení a odložené drobnosti – budova
 - Chyba uprostřed `loop()`: výstupy zapsané před chybou zůstanou v `ctl.out`, ale na drát se nepošlou – drát drží stav z posledního úspěšného běhu; panel Výstupy v okně ukazuje právě stav drátu (`ctl.wires`).
 - Undo zbourání (Ctrl+Z) vrátí budovu bez kódu – duch z undo nenese tagy (řešitelné přes undo-redo API 2.0).
 - Po načtení hry se každý program překládá zvlášť a všechny v prvním ticku (při stovkách budov krátké zaškobrtnutí).
 - `set_slot` skrytého výstupu vyvolá `on_entity_logistic_slot_changed` – mody, které ji poslouchají, platí za každou změnu výstupu.
 - Varianta testů `mods …` je jednofázová (bez uložení a načtení).
 
-## Známá omezení GUI a knihovny (plán 3)
+## Známá omezení GUI a knihovny
 - Tab v editoru nefunguje a API nezná pozici kurzoru: pohled se posouvá jen při psaní (na první změněný řádek), šipky a myš posun nevyvolají.
 - Rozepsaný kód (`ctl.draft`) je sdílený pro budovu: když píšou dva hráči současně, poslední zápis přepíše text druhému.
 - Vektorové operace jsou zhruba stejně drahé jako ruční smyčka (`lua tools/bench-lang.lua`: `each2x` vs `loop2x`); řetězení `where(...).each(...)` = víc průchodů. Výhodou je hlavně kratší zápis.

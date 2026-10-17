@@ -1,6 +1,6 @@
-# Pythonator – návrh (v0.1)
+# Pythonator – návrh
 
-Datum: 2026-10-09 · Factorio 2.0 (vanilla i Space Age)
+Datum: 2026-10-09 (aktualizováno 2026-10-17, stav verze 0.1.1) · Factorio 2.0 (vanilla i Space Age)
 
 ## Cíl
 
@@ -138,12 +138,12 @@ zdokumentovaná odchylka; sledování typu čísla by zpomalilo každou operaci.
 Chyby běhu (`TypeError`, `IndexError`, dělení nulou …) zastaví kontrolér ve stavu CHYBA s řádkem zdrojového kódu.
 `print()` zapisuje do ladicího logu budovy (posledních 50 řádků, zobrazeno v GUI; log se neukládá do globálů).
 
-### Knihovna kombinátorů (plán 3)
+### Knihovna kombinátorů
 
 Rychlý zápis toho, co umí vanilla kombinátory, a hotové stavové prvky – kratší psaní i rychlejší běh
 (operace nad celou sadou signálů proběhne jedním voláním runtime nad polem, ne interpretovanou smyčkou).
 
-| Skupina | Funkce (návrh, upřesní plán 3) |
+| Skupina | Funkce |
 |---|---|
 | Vektorové nad objekty signálů | `inp.each(op, x)` (jako Each v aritmetickém kombinátoru), `inp.where(op, x)` (filtr jako Each v rozhodovacím), `count`, `sum`, `max_key`, `min_key`; výsledek jde rovnou do `out.set(…)` |
 | Stavové prvky (stav pod jménem v globálech programu, přežije save) | `latch(jméno, set, reset)`, `timer(jméno, perioda)`, `edge(jméno, hodnota)` (náběžná/sestupná hrana), `counter`, `delay(jméno, hodnota, n)` (zpoždění o N ticků), `pid` |
@@ -214,7 +214,7 @@ největší proměnné). Obě pojistky jsou nezávislé na délce běhu hry (roz
 | Energie | elektrická, 50 kW (konstanta v `prototypes/entity.lua`) | „počítač“, dražší než kombinátor |
 | Výzkum | vlastní `pyntr-pythonator`; prerekvizity `circuit-network`, `advanced-circuit`; věda červená + zelená + modrá | úroveň za kombinátory |
 | Recept | 5× advanced-circuit, 2× decider-combinator, 2× arithmetic-combinator, 5× steel-plate | vzniká z kombinátorů |
-| Grafika v0.1 | nejdřív dočasně tint vanilla kombinátoru, pak vlastní model z Blenderu s logem Pythonu (plán 2, Task 10) | nejdřív logika, vzhled na konci |
+| Grafika | vlastní model z Blenderu (`blender/`), bez loga Pythonu (ochranná známka PSF); displej ukazuje rolující řádky kódu, stavová LED | vzhled vlastní budovy, ne přebarvený kombinátor |
 
 Hodnoty energie, receptu a limitů pojistek budou v tabulce „Kde ladit hodnoty“ v `docs/development.md`.
 
@@ -264,7 +264,9 @@ s delším intervalem, dokud proud nebude).
    výpadek proudu, uložení a načtení, blueprint, watchdog a paměť, vanilla i Space Age (kvalita v klíčích).
 4. **Výkon** – N kontrolérů s typickým programem vs. prázdná mapa, ms/tick do `docs/development.md`.
 
-## Rizika k ověření prototypem (jako první)
+## Rizika ověřená prototypem
+
+Výsledky (co funguje, co ne a důsledky) jsou v `docs/development.md` → „Ověřená rizika“.
 
 1. `text-box` s `icon_selector` a rich textem ve víceřádkovém editoru – použitelnost, kurzor, kopírování.
 2. Klávesa Tab v `text-box`.
@@ -274,7 +276,7 @@ s delším intervalem, dokud proud nebude).
 
 ## Mimo rozsah v0.1
 
-Displejové API, vestavěné časovače a detekce hran, úlohy (multitasking), f-stringy, auto-odsazení,
+Displejové API, úlohy (multitasking), f-stringy, auto-odsazení,
 zvýraznění syntaxe, sdílené proměnné mezi kontroléry, čtení stavu entit mimo obvodovou síť.
 
 ## Klíčová rozhodnutí
