@@ -36,7 +36,10 @@ end
 function M.on_init()
   local surface = game.create_surface("pyntr-test")
   surface.generate_with_lab_tiles = true
-  surface.request_to_generate_chunks({ 0, 0 }, 8)
+  -- Výřezy testů (8 v řadě po 24 dlaždicích od −96) rostou s počtem testů dolů – poloměr podle poslední řady,
+  -- jinak testy za okrajem vygenerované oblasti padají na nesmyslné chybě („nelze postavit“).
+  local bottom = math.floor((#cases - 1) / 8) * 24 - 96 + 24
+  surface.request_to_generate_chunks({ 0, 0 }, math.max(8, math.ceil(bottom / 32) + 1))
   surface.force_generate_chunk_requests()
   storage.summary = { pass = 0, fail = 0, skip = 0 }
   storage.tests = {}
