@@ -15,6 +15,10 @@ before:  decider + arithmetic + constant combinators + memory cells + clock … 
 now:     one Pythonator:   out["signal-S"] = 1 if inp["petroleum-gas"] < 1000 else 0
 ```
 
+Enjoying the mod? You can support its development:
+
+[![Buy Me a Coffee](https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png)](https://buymeacoffee.com/ypsilonx)
+
 ## Getting started
 
 1. Research **Pythonator** (after circuit network and advanced circuits), craft it and place it. To face it east or west, rotate it with R while it is still in hand – once placed it only flips 180°, like any arithmetic combinator.
@@ -185,13 +189,13 @@ Pythonators together are in F4 → show-time-usage → `mod-Pythonator` (a tick 
 3. **Read only what you need.** `inp["x"]` is cheap; iterating all signals reads the whole network. Buildings on
    the same network share the read within a tick.
 
-Measured with 150 buildings running a simple sequence (Factorio 2.0.77, `--benchmark`):
+Measured with 150 buildings running a simple sequence (Factorio 2.1.23, `--benchmark`):
 
 | Program | ms per tick (all 150) |
 |---|---|
-| rewriting the output every tick | 0.84 |
-| writing only on change | 0.41 |
-| `config(interval=60)` | 0.05 |
+| rewriting the output every tick | 0.99 |
+| writing only on change | 0.46 |
+| `config(interval=60)` | 0.10 |
 
 ## Building window and help
 
@@ -212,7 +216,7 @@ Recipe: 5× advanced circuit, 2× decider combinator, 2× arithmetic combinator,
 
 ## Compatibility
 
-Factorio 2.0, vanilla and Space Age (quality in signal keys). Recipe and research are derived from the game's
+Factorio 2.1, vanilla and Space Age (quality in signal keys). Players on Factorio 2.0 get version 0.1.1. Recipe and research are derived from the game's
 data, tested with **Pyanodon's** (pymodpack), **Bob's** (bobrevamp) and **AAI Industry**.
 
 ## Known limitations

@@ -1,6 +1,6 @@
 # Pythonator
 
-Mod do Factoria 2.0: programovatelný obvodový kontrolér, který se programuje v podmnožině Pythonu
+Mod do Factoria 2.1: programovatelný obvodový kontrolér, který se programuje v podmnožině Pythonu
 (překlad do Lua, superloop `loop()` každý tick). Vydáno na mods.factorio.com. Velikost: L.
 
 Doména: factorio-mod (+ blender-workflow pro grafiku) – obecná pravidla domény jsou ve skillu, tady se neopakují.

@@ -23,9 +23,9 @@ cp -r "$ROOT/tests/pythonator-tests" "$RUN/mods/pythonator-tests"
 # Konformní programy jazyka jako data pro test ve hře (generovaný soubor jen v běhu, ne v repozitáři).
 (cd "$ROOT" && lua tools/conformance-data.lua) > "$RUN/mods/pythonator-tests/conformance_data.lua"
 
-declare -A BUILTIN=([base]=true [elevated-rails]=false [quality]=false [space-age]=false)
+declare -A BUILTIN=([base]=true [elevated-rails]=false [quality]=false [recycler]=false [space-age]=false)
 EXTRA=()
-[ "$VARIANT" = "space-age" ] && BUILTIN=([base]=true [elevated-rails]=true [quality]=true [space-age]=true)
+[ "$VARIANT" = "space-age" ] && BUILTIN=([base]=true [elevated-rails]=true [quality]=true [recycler]=true [space-age]=true)
 
 # Zkopíruje nejvyšší verzi modu ze složky MODS_SOURCE a rekurzivně jeho povinné závislosti.
 declare -A SEEN=()
@@ -35,7 +35,7 @@ add_mod() {
   SEEN[$name]=1
   if [ -n "${BUILTIN[$name]:-}" ]; then
     BUILTIN[$name]=true
-    [ "$name" = "space-age" ] && BUILTIN[quality]=true && BUILTIN[elevated-rails]=true
+    [ "$name" = "space-age" ] && BUILTIN[quality]=true && BUILTIN[elevated-rails]=true && BUILTIN[recycler]=true
     return 0
   fi
   [ "$name" = "core" ] && return 0
@@ -44,12 +44,13 @@ add_mod() {
   if [ -z "$zip" ]; then echo "Mod $name není v $MODS_SOURCE"; exit 1; fi
   cp "$zip" "$RUN/mods/"
   EXTRA+=("$name")
-  # Povinné závislosti: bez prefixu ?, (?), ! a ~ (ten je povinný, jen nemění pořadí načítání).
+  # Povinné závislosti: bez prefixu ?, (?), ! – ~ je povinný (jen nemění pořadí načítání), + (2.1) je volitelný,
+  # ale hráč ho má ve výchozím stavu zapnutý, proto se načítá taky.
   local dep
   # info.json může být i na jednom řádku – proto spojit řádky a vzít jen obsah pole "dependencies".
   for dep in $(unzip -p "$zip" '*/info.json' | tr -d '\r\n' | grep -o '"dependencies"[^]]*' \
       | grep -o '"[^"]*"' | tr -d '"' | grep -v '^dependencies$' \
-      | grep -vE '^(\?|\(\?\)|!)' | sed -E 's/^~ ?//; s/^ *//; s/[ <>=].*$//'); do
+      | grep -vE '^(\?|\(\?\)|!)' | sed -E 's/^[~+] ?//; s/^ *//; s/[ <>=].*$//'); do
     add_mod "$dep"
   done
 }
@@ -64,7 +65,7 @@ fi
 
 {
   echo '{"mods":['
-  for name in base elevated-rails quality space-age; do echo "  {\"name\":\"$name\",\"enabled\":${BUILTIN[$name]}},"; done
+  for name in base elevated-rails quality recycler space-age; do echo "  {\"name\":\"$name\",\"enabled\":${BUILTIN[$name]}},"; done
   for name in "${EXTRA[@]}"; do echo "  {\"name\":\"$name\",\"enabled\":true},"; done
   echo '  {"name":"Pythonator","enabled":true},'
   echo '  {"name":"pythonator-tests","enabled":true}'

@@ -1,6 +1,6 @@
 # Pythonator
 
-Mod do Factoria 2.0: programovatelný obvodový kontrolér, který se programuje v podmnožině Pythonu.
+Mod do Factoria 2.1: programovatelný obvodový kontrolér, který se programuje v podmnožině Pythonu.
 Každý tick: načíst vstupy → `loop()` → zapsat výstupy.
 
 - Návrh: `docs/specs/2026-10-09-pythonator-design.md`

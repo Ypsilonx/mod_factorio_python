@@ -1,7 +1,7 @@
 # Pythonator – vývoj
 
 ## Prostředí
-- Factorio 2.0 (hra běží na Lua 5.2), lokální testy v Lua 5.3 (`lua` v PATH), CPython přes `uv` jen pro `tools/gen-conformance.sh`.
+- Factorio 2.1 (hra běží na Lua 5.2), lokální testy v Lua 5.3 (`lua` v PATH), CPython přes `uv` jen pro `tools/gen-conformance.sh`.
 - Editor (sumneko): `.luarc.json` nastavuje runtime Lua 5.2 – jinak hlásí falešně `Undefined global bit32`.
 
 ## Struktura jazyka (`Pythonator/scripts/lang/`)
@@ -123,15 +123,22 @@ Pythonator běží, když má v zásobníku energii aspoň na jeden tick (`entit
 
 Stav entity rozhodovat nemůže (`low_power` ve všech třech případech). Skok energie při výpadku pustí ještě jeden běh (dobíhá zásobník); první kontrola po postavení v podpětí nemá s čím srovnat, takže Pythonator začne až po 60 ticích.
 
-## Kompatibilita (ověřeno 2026-10-09, Factorio 2.0.77)
+## Kompatibilita (ověřeno 2026-10-23, Factorio 2.1.23)
 `bash tools/run-tests.sh mods …` – obecné kontroly z `cases/compat.lua` (entita, recept, výzkum, dostupnost surovin):
-| Mody | Výsledek | Suroviny / prerekvizity |
+| Mody (verze pro 2.1) | Výsledek | Suroviny / prerekvizity |
 |---|---|---|
-| Pyanodon (`pymodpack` + závislosti) | ✓ | vanilla suroviny; prerekvizity basic-electronics, chemical-science-pack, circuit-network, steel-mk02; naše final-fixes běží před `pypostprocessing`, který vědu přepočítá |
-| Bob's (`bobrevamp` + 16 modů) | ✓ | vanilla suroviny; chemical-science-pack, circuit-network |
-| AAI Industry | ✓ | vanilla suroviny; chemical-science-pack, circuit-network |
+| Pyanodon (`pymodpack` 3.1.0 + závislosti) | ✓ | vanilla suroviny; prerekvizity basic-electronics, chemical-science-pack, circuit-network, steel-mk02; naše final-fixes běží před `pypostprocessing`, který vědu přepočítá. Py 3.1 volá `recipe:has_category` i na náš recept → prototypy `pyntr-*` přebírají metatabulku ostatních prototypů (`data-final-fixes.lua`, regrese v `tests/pythonator-tests/data*.lua`) |
+| Bob's (`bobrevamp` 3.0.1 + závislosti) | ✓ | vanilla suroviny; chemical-science-pack, circuit-network |
+| AAI Industry 0.7.5 | ✓ | vanilla suroviny; chemical-science-pack, circuit-network |
+
+Starý save z 2.0.77 (255 budov, Space Age + cizí mody) se ve 2.1.23 s verzí 0.2.0 načte, všechny programy běží
+bez chyby a se zachovaným stavem (jednorázová sonda přes `remote.call("pyntr", "get_state", …)`).
 
 ## Výkon (`bash tools/run-perf.sh`, 500 budov, zdroj 20 signálů, 3600 ticků, Factorio 2.0.77)
+
+Kontrola na Factoriu 2.1.23 (2026-10-23, verze 0.2.0): idle 0,10, decider 0,14, pass 1,62, hyst 15,3 ms/tick;
+sekvence (150 budov) seq-tick 1,09, seq-change 0,56, seq-60 0,20 – v rámci šumu stejné jako na 2.0.77.
+
 | Režim | ms/tick | µs na budovu |
 |---|---|---|
 | idle (jen zdroj a proud) | 0,14 | – |
