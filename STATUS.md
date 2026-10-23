@@ -10,7 +10,7 @@ vazby z portálu), výkon a kompatibilita – viz `ROADMAP.md` M2–M4.
 ## Hotovo
 
 - Verze 0.1.1 vydaná na portálu (2026-10-11) pro Factorio 2.0.
-- 0.2.0 připravená (2026-10-23, necommitnutá, nevydaná): `factorio_version` 2.1, oprava pádu s Pyanodonem 3.1
+- Verze 0.2.0 vydaná na portálu (2026-10-23) pro Factorio 2.1: `factorio_version` 2.1, oprava pádu s Pyanodonem 3.1
   (metatabulka prototypů `pyntr-*` + regresní test), `recycler` a závislosti `+` v `run-tests.sh`/`run-perf.sh`,
   banner Buy Me a Coffee v `docs/mod-portal.md`, changelog, docs.
 - Ověřeno na 2.1.23: unit 315/0, vanilla 33/0 (2 skip), Space Age 35/0, mods pymodpack 3.1.0 / bobrevamp 3.0.1 /
@@ -18,13 +18,12 @@ vazby z portálu), výkon a kompatibilita – viz `ROADMAP.md` M2–M4.
 
 ## Rozpracováno
 
-- 0.2.0: ruční kontrola ve hře OK (2026-10-23), čeká na commit a vydání.
+- Nic.
 
 ## Další krok
 
-1. Commit → `bash tools/publish.sh --details` (`--details` kvůli banneru v popisu).
-2. Projít zpětnou vazbu a hlášení chyb na portálu → seznam bugů sem.
-3. Odložené drobnosti (`docs/development.md` → „Známá omezení“): undo (Ctrl+Z) bez kódu; překlad všech programů
+1. Projít zpětnou vazbu a hlášení chyb na portálu → seznam bugů sem.
+2. Odložené drobnosti (`docs/development.md` → „Známá omezení“): undo (Ctrl+Z) bez kódu; překlad všech programů
    v prvním ticku po načtení; varianta testů `mods …` bez uložení a načtení.
 
 ## Otevřené otázky / slepé uličky
