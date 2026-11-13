@@ -3,7 +3,8 @@
 # Použití: tools/publish.sh [--new | --details] [--dry-run]
 #   (bez přepínače)  nová verze existujícího modu (Mod upload API, oprávnění „ModPortal: Upload Mods“)
 #   --details        navíc aktualizuje údaje na portálu (titul, shrnutí z info.json, popis z docs/mod-portal.md,
-#                    kategorie, tagy, licence; oprávnění „ModPortal: Edit Mods“)
+#                    kategorie, tagy, licence; oprávnění „ModPortal: Edit Mods“); je-li verze už nahraná,
+#                    aktualizuje jen údaje
 #   --new            první vydání – mod na portálu ještě není (Mod publish API, „ModPortal: Publish Mods“),
 #                    pak nastaví údaje jako --details
 #   --dry-run        jen kontroly a sestavení zipu, na portál nic neodešle
@@ -22,6 +23,8 @@ SOURCE_URL="${PYNTR_SOURCE_URL:-https://github.com/Ypsilonx/mod_factorio_python}
 
 MODE="version"
 DRY=0
+#: 1 = verze z info.json už na portálu je a --details jen aktualizuje údaje.
+DETAILS_ONLY=0
 for arg in "$@"; do
   case "$arg" in
     --new) MODE="new" ;;
@@ -54,9 +57,11 @@ if [ "$MODE" = "new" ]; then
   [ "$STATUS" = "404" ] || { echo "Mod $MOD už na portálu je (HTTP $STATUS) – použij nahrání nové verze."; exit 1; }
 else
   [ "$STATUS" = "200" ] || { echo "Mod $MOD na portálu není (HTTP $STATUS) – první vydání: --new."; exit 1; }
-  if curl -sS "$API/mods/$MOD" | grep -q "\"version\":\"$VERSION\""; then
-    echo "Verze $VERSION už na portálu je – zvyš version v info.json."
-    exit 1
+  # Parametr t obchází cache portálu – bez něj API chvíli po nahrání vrací starý seznam verzí.
+  if curl -sS "$API/mods/$MOD?t=$(date +%s)" | grep -q "\"version\":\"$VERSION\""; then
+    [ "$MODE" = "details" ] || { echo "Verze $VERSION už na portálu je – zvyš version v info.json."; exit 1; }
+    DETAILS_ONLY=1
+    echo "Verze $VERSION už na portálu je – aktualizují se jen údaje."
   fi
 fi
 [ -n "$(git -C "$ROOT" status --porcelain -- "$MOD" docs/mod-portal.md)" ] \
@@ -85,17 +90,24 @@ check() {
 
 #: Údaje modu na portálu (titul, shrnutí, popis, kategorie, tagy, licence).
 edit_details() {
-  # Shrnutí přes soubor: curl.exe dostane argumenty v kódové stránce Windows a ne-ASCII znaky (–) rozbije.
-  local summary_file
+  # Titul a shrnutí přes soubory: curl.exe dostane argumenty v kódové stránce Windows a ne-ASCII znaky (–) rozbije.
+  local title_file summary_file
+  title_file="$(mktemp)"
   summary_file="$(mktemp)"
+  printf "%s" "$TITLE" > "$title_file"
   printf "%s" "$SUMMARY" > "$summary_file"
-  local args=(-F "mod=$MOD" -F "title=$TITLE" -F "summary=<$(cygpath -m "$summary_file")" -F "category=$CATEGORY" -F "license=$LICENSE"
+  local args=(-F "mod=$MOD" -F "title=<$(cygpath -m "$title_file")" -F "summary=<$(cygpath -m "$summary_file")" -F "category=$CATEGORY" -F "license=$LICENSE"
     "${SOURCE_ARGS[@]}" -F "description=<$(cygpath -m "$ROOT/docs/mod-portal.md")")
   for tag in "${TAGS[@]}"; do args+=(-F "tags=$tag"); done
   check "Úprava údajů" "$(curl -sS -H "Authorization: Bearer $KEY" "${args[@]}" "$API/v2/mods/edit_details")"
-  rm -f "$summary_file"
+  rm -f "$title_file" "$summary_file"
   echo "Údaje a popis na portálu nastaveny."
 }
+
+if [ "$DETAILS_ONLY" = 1 ]; then
+  edit_details
+  exit 0
+fi
 
 if [ "$MODE" = "new" ]; then
   INIT="$(curl -sS -H "Authorization: Bearer $KEY" -F "mod=$MOD" "$API/v2/mods/init_publish")"

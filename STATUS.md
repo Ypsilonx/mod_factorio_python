@@ -13,6 +13,9 @@ vazby z portálu), výkon a kompatibilita – viz `ROADMAP.md` M2–M4.
 - Verze 0.2.0 vydaná na portálu (2026-10-23) pro Factorio 2.1: `factorio_version` 2.1, oprava pádu s Pyanodonem 3.1
   (metatabulka prototypů `pyntr-*` + regresní test), `recycler` a závislosti `+` v `run-tests.sh`/`run-perf.sh`,
   banner Buy Me a Coffee v `docs/mod-portal.md`, changelog, docs.
+- Verze 0.2.1 vydaná (2026-11-13): jen titulek „Pythonator – Programmable Combinator“ a popis se slovem combinator
+  (připomínka hráče: podle jména nikdo nepozná, že jde o kombinátor). `publish.sh`: titul přes soubor (ne-ASCII),
+  `--details` u nahrané verze jen aktualizuje údaje, kontrola verze obchází cache API.
 - Ověřeno na 2.1.23: unit 315/0, vanilla 33/0 (2 skip), Space Age 35/0, mods pymodpack 3.1.0 / bobrevamp 3.0.1 /
   aai-industry 0.7.5 ✓, výkon beze změny, starý save z 2.0.77 (255 budov) se načte a programy běží.
 
