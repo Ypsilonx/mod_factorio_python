@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.2.2
+Date: 2026-11-17
+  Bugfixes:
+    - Reading a single wire by key (red["stone"], green["stone"], red.get(...)) no longer stops the program
+      with "Internal error: 'wire_connector_id': real number expected got nil". inp was not affected.
+---------------------------------------------------------------------------------------------------
 Version: 0.2.1
 Date: 2026-11-13
   Info:

@@ -42,9 +42,12 @@ function M.set_source(source, sid, value)
   section.set_slot(1, { value = { type = sid.type, name = sid.name, quality = sid.quality, comparator = "=" }, min = value })
 end
 
---- Propojí červeným drátem výstup zdroje se vstupem kombinátoru.
-function M.wire_input(source, target)
-  source.get_wire_connector(W.circuit_red, true).connect_to(target.get_wire_connector(W.combinator_input_red, true), false)
+--- Propojí drátem výstup zdroje se vstupem kombinátoru.
+--- @param wire string|nil "green" pro zelený drát, jinak červený
+function M.wire_input(source, target, wire)
+  local green = wire == "green"
+  source.get_wire_connector(green and W.circuit_green or W.circuit_red, true)
+    .connect_to(target.get_wire_connector(green and W.combinator_input_green or W.combinator_input_red, true), false)
 end
 
 --- Hodnota signálu na výstupní síti kombinátoru (drát "red" nebo "green").

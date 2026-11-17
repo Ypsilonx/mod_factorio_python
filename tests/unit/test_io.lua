@@ -18,6 +18,21 @@ local function inp_source(io, entity)
 end
 
 return {
+  { "inp / red / green: čtení po klíči i celé sady (regrese: red['x'] padal na nil konektoru)", function()
+    local io = setup()
+    local res = require("scripts.resolver").get()
+    local e = G.entity(1)
+    e.red["signal-A"], e.green["signal-A"], e.green["signal-B"] = 5, 7, 3
+    local expected = { inp = { A = 12, B = 3, n = 2 }, red = { A = 5, B = 0, n = 1 }, green = { A = 7, B = 3, n = 2 } }
+    for name, wires in pairs(io.input_wires()) do
+      local src = io.reader_source(e, wires, res)
+      src.reset(1)
+      local exp = expected[name]
+      A.eq(src.get("signal-A"), exp.A, name .. "['signal-A']")
+      A.eq(src.get("signal-B"), exp.B, name .. "['signal-B']")
+      A.eq(#src.all(), exp.n, name .. ": počet signálů")
+    end
+  end },
   { "budovy na stejné síti čtou v jednom ticku z enginu jen jednou", function()
     local io = setup()
     local a, b = G.entity(1), G.entity(2)

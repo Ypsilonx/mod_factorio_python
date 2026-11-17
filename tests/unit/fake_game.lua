@@ -40,16 +40,31 @@ function M.entity(unit)
               prototype = { get_max_energy_usage = function() return 833 end } }
   --- Signály drátu podle id konektoru.
   local function wire(id) return id == 1 and e.red or id == 2 and e.green or {} end
-  function e.get_signal(sid, a, b)
+  --- Kontrola konektorů jako ve skutečné hře: výslovně předané nil hra nebere jako vynechaný argument
+  --- („'wire_connector_id': real number expected got nil“) – benevolentní fake tuhle chybu dřív skryl.
+  local function check_wires(name, ...)
+    for i = 1, select("#", ...) do
+      if type(select(i, ...)) ~= "number" then
+        error(name .. ": 'wire_connector_id': real number expected got " .. type(select(i, ...)), 2)
+      end
+    end
+  end
+  function e.get_signal(sid, ...)
+    check_wires("get_signal", ...)
+    local a, b = ...
     return (wire(a)[sid.name] or 0) + (b and wire(b)[sid.name] or 0)
   end
   --- Id sítí konektorů (výchozí: síť podle entity a drátu, jen když na drátu něco je).
   e.net_ids, e.reads = {}, 0
-  function e.get_circuit_network(id)
+  function e.get_circuit_network(...)
+    check_wires("get_circuit_network", ...)
+    local id = ...
     local nid = e.net_ids[id] or (next(wire(id)) and e.unit_number * 10 + id)
     return nid and { network_id = nid } or nil
   end
-  function e.get_signals(a, b)
+  function e.get_signals(...)
+    check_wires("get_signals", ...)
+    local a, b = ...
     e.reads = e.reads + 1
     local sum = {}
     for _, id in ipairs({ a, b }) do

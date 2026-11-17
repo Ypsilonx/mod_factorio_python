@@ -173,7 +173,11 @@ function M.reader_source(entity, wires, res)
 
   function source.get(canonical)
     local sid = res:resolve(canonical)
-    return entity.get_signal(sid, wires[1], wires[2])
+    -- API hry nebere výslovné nil jako vynechaný argument (chyba „real number expected got nil“),
+    -- proto se jednodrátové čtení (red/green) volá jen s jedním konektorem.
+    local w2 = wires[2]
+    if w2 then return entity.get_signal(sid, wires[1], w2) end
+    return entity.get_signal(sid, wires[1])
   end
 
   function source.all()
