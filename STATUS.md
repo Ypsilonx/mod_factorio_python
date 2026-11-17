@@ -16,7 +16,7 @@ vazby z portálu), výkon a kompatibilita – viz `ROADMAP.md` M2–M4.
 - Verze 0.2.1 vydaná (2026-11-13): jen titulek „Pythonator – Programmable Combinator“ a popis se slovem combinator
   (připomínka hráče: podle jména nikdo nepozná, že jde o kombinátor). `publish.sh`: titul přes soubor (ne-ASCII),
   `--details` u nahrané verze jen aktualizuje údaje, kontrola verze obchází cache API.
-- Verze 0.2.2 (2026-11-17): oprava `red['x']` / `green['x']` („'wire_connector_id': real number expected got nil“,
+- Verze 0.2.2 vydaná (2026-11-17, Factorio 2.1.24): oprava `red['x']` / `green['x']` („'wire_connector_id': real number expected got nil“,
   hlášení hráče) – `io.lua` `source.get` předával enginu výslovné nil jako druhý konektor. Chyba od začátku; skryl ji
   benevolentní fake v `tests/unit/fake_game.lua` (teď přísný jako engine) a chybějící test ve hře (`cases/inputs.lua`).
   Ověřeno: unit 316/0, vanilla 34/0 (2 skip), Space Age 36/0; bez opravy nové testy padají.
@@ -29,8 +29,9 @@ vazby z portálu), výkon a kompatibilita – viz `ROADMAP.md` M2–M4.
 
 ## Další krok
 
-1. Projít zpětnou vazbu a hlášení chyb na portálu → seznam bugů sem.
-2. Odložené drobnosti (`docs/development.md` → „Známá omezení“): undo (Ctrl+Z) bez kódu; překlad všech programů
+1. Odpovědět hráči na portálu (hlášení red/green): opraveno v 0.2.2.
+2. Projít zpětnou vazbu a hlášení chyb na portálu → seznam bugů sem.
+3. Odložené drobnosti (`docs/development.md` → „Známá omezení“): undo (Ctrl+Z) bez kódu; překlad všech programů
    v prvním ticku po načtení; varianta testů `mods …` bez uložení a načtení.
 
 ## Otevřené otázky / slepé uličky
