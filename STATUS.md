@@ -1,6 +1,6 @@
 # Stav projektu
 
-Aktualizováno: 2026-11-17
+Aktualizováno: 2026-11-22
 
 ## Cíl
 
@@ -25,17 +25,20 @@ vazby z portálu), výkon a kompatibilita – viz `ROADMAP.md` M2–M4.
 
 ## Rozpracováno
 
-- 0.3.0: šablony a výběr signálu pod editorem (spec `docs/specs/2026-11-22-snippets-design.md`, plán
-  `docs/plans/2026-11-22-snippets.md`). Task 1 (spike `select`) ověřen ve hře ✓ (i diakritika). Task 2 (celá lišta, příkazy s odsazením) ověřen ve hře ✓. Další: task 3 (výběr signálu).
-- 0.3.0: ALT režim a popis budovy (plán `docs/plans/2026-11-22-alt-mode.md`): `config(label, icon)`, řady čtených
-  vstupů a výstupů po drátech (3 na řadu; šipky ALT kreslí mod na hraně, šipky enginu vypnuté `hide-alt-info` ✓ ověřeno ve hře;
-  podklad drátu = poloprůhledný `utility/white_square` pod ikonou), ikona programu
-  trvale se stínem; ikona z výběru v uvozovkách = klíč signálu
-  (`signals.tag_key`) – ověřeno ve hře ✓ (commit 7fa7f1a). Nápověda (task 4): karty config() a Okno a ALT,
-  podrobná Knihovna (PID), user-guide, odchylky – unit 333/0, čeká na pohled ve hře.
+- 0.3.0 (verze už v info.json) – funkce hotové a ověřené ve hře, nevydané:
+  - Lišta šablon pod editorem + výběr signálu (spec `docs/specs/2026-11-22-snippets-design.md`, plán
+    `docs/plans/2026-11-22-snippets.md`); vkládá na místo posledního psaní (API kurzor nezná).
+  - ALT režim a popis budovy (plán `docs/plans/2026-11-22-alt-mode.md`): `config(label, icon)`, řady čtených vstupů
+    a výstupů po drátech, vlastní šipky na hraně (šipky enginu vypnuté `hide-alt-info`), ikona programu se stínem;
+    ikona z výběru v uvozovkách = klíč signálu (`signals.tag_key`).
+  - Nápověda: karty config() a Okno a ALT, podrobná Knihovna (PID), user-guide.
+  - Ověřeno: unit 336/0, vanilla 35/0.
 
 ## Další krok
 
+0. Vydání 0.3.0: changelog, `docs/mod-portal.md` + obrázky (šablony, ALT, config), testy space-age + `run-perf.sh`
+   (měnil se zápis výstupů), jedna nezávislá revize kódu celé 0.3.0, pak `tools/publish.sh`; plány v `docs/plans/`
+   po vydání smazat.
 1. Odpovědět hráči na portálu (hlášení red/green): opraveno v 0.2.2.
 2. Projít zpětnou vazbu a hlášení chyb na portálu → seznam bugů sem.
 3. Odložené drobnosti (`docs/development.md` → „Známá omezení“): undo (Ctrl+Z) bez kódu; překlad všech programů

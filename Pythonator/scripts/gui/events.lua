@@ -7,6 +7,7 @@ local window = require("scripts.gui.window")
 local editor = require("scripts.gui.editor")
 local help = require("scripts.gui.help")
 local snippets = require("scripts.gui.snippets")
+local resolver = require("scripts.resolver")
 
 local M = {}
 
@@ -36,16 +37,26 @@ function CLICK.insert_example(_, st, ctl, element)
   window.refresh_unit(ctl.unit)
 end
 
+--- Zapíše text vložený tlačítkem do editoru, draftu a ostatních oken nad budovou; pak označí `sel`
+--- (zástupné slovo), nebo postaví kurzor na místo psaní.
+local function put_text(st, ctl, text, caret, sel)
+  editor.set_text(st.refs, text)
+  st.text, st.caret, st.sel = text, caret, sel
+  actions.set_draft(ctl, text)
+  window.refresh_unit(ctl.unit)
+  if sel then
+    editor.select_bytes(st.refs, sel.first, sel.last)
+  else
+    editor.caret_bytes(st.refs, caret)
+  end
+end
+
 --- Vložení šablony na místo posledního psaní (st.caret) a označení jejího zástupného slova.
 function CLICK.snippet(_, st, ctl, element)
   local snip = snippets.get(element.tags.snippet)
   if not (ctl and snip and actions.view(ctl).can.edit) then return end
   local text, first, last, caret = snippets.insert(st.refs.code.text, st.caret, snip)
-  editor.set_text(st.refs, text)
-  st.text, st.caret = text, caret
-  actions.set_draft(ctl, text)
-  window.refresh_unit(ctl.unit)
-  editor.select_bytes(st.refs, first, last)
+  put_text(st, ctl, text, caret, { first = first, last = last, region_end = caret, text = text })
 end
 
 --- Kliknutí, která nepotřebují hlavní okno (nápověda): function(player).
@@ -121,6 +132,19 @@ function M.on_gui_text_changed(event)
   for _, other in ipairs(window.viewers(ctl.unit)) do
     if other.index ~= player.index then window.refresh(other) end
   end
+end
+
+--- Výběr signálu v liště šablon: vloží jméno signálu (nahradí označené SIGNAL ze šablony) a tlačítko
+--- vyprázdní, aby šel stejný signál vybrat znovu.
+function M.on_gui_elem_changed(event)
+  local player, st, ctl, element = context(event)
+  if not (player and ctl) or element.tags.pyntr_action ~= "signal_pick" then return end
+  local sid = element.elem_value
+  element.elem_value = nil
+  if not (sid and actions.view(ctl).can.edit) then return end
+  local key = resolver.get():canonical(sid)
+  local text, caret, sel = snippets.insert_signal(st.refs.code.text, st.caret, st.sel, key)
+  put_text(st, ctl, text, caret, sel)
 end
 
 --- Jak často se otevřená okna obnovují (ticky). Laditelné.

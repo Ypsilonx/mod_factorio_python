@@ -126,6 +126,15 @@ function M.select_bytes(refs, first, last)
   refs.code.select(chars(text, first), chars(text, last))
 end
 
+--- Zaměří editor a postaví kurzor za `caret` bajtů textu (select(n + 1, n) = kurzor za n-tým znakem).
+--- @param refs table z build
+--- @param caret integer
+function M.caret_bytes(refs, caret)
+  local n = snippets.char_count(refs.code.text, caret)
+  refs.code.focus()
+  refs.code.select(n + 1, n)
+end
+
 --- Po psaní hráče: přizpůsobí velikost a posune pohled na změněný řádek.
 --- @param refs table z build
 --- @param old string text před změnou

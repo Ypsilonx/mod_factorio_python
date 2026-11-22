@@ -1,5 +1,5 @@
 --- Testy šablon editoru: místo psaní z rozdílu textů, vložení šablony, převod bajtů na znaky a klik v okně.
----@diagnostic disable: inject-field, missing-fields
+---@diagnostic disable: inject-field, missing-fields, undefined-global
 local A = require("assert")
 local G = require("fake_game")
 local F = require("fake_gui")
@@ -111,5 +111,55 @@ return {
       local res, err = P.run(src, 2)
       A.truthy(res, s.id .. ": " .. tostring(err and (err.key or err)) .. "\n" .. src)
     end
+  end },
+  { "výběr signálu nahradí označené SIGNAL a označí další zástupné slovo šablony", function()
+    local IF = S.get("if")
+    local text, first, last, caret = S.insert("def loop():", #"def loop():", IF)
+    local sel = { first = first, last = last, region_end = caret, text = text }
+    local new, new_caret, next_sel = S.insert_signal(text, caret, sel, "iron-plate")
+    A.eq(new, "def loop():\n    if inp[\"iron-plate\"] > NUMBER:\n        pass", "SIGNAL nahrazený")
+    A.eq(new:sub(next_sel.first, next_sel.last), "NUMBER", "označené další zástupné slovo")
+    A.eq(new:sub(new_caret - 9, new_caret), "iron-plate", "kurzor za signálem")
+    -- další zástupné slovo se hledá jen uvnitř vložené šablony, ne v textu za ní
+    local t2 = "x = inp[\"SIGNAL\"]\ny = OTHER"
+    local s2 = { first = 10, last = 15, region_end = 17, text = t2 }
+    local n2, _, none = S.insert_signal(t2, 17, s2, "signal-A")
+    A.eq(n2, "x = inp[\"signal-A\"]\ny = OTHER", "nahrazeno")
+    A.eq(none, nil, "OTHER za šablonou se neoznačí")
+  end },
+  { "výběr signálu bez označeného SIGNAL vloží \"jméno\" na místo psaní", function()
+    local new, caret, sel = S.insert_signal("x = ", 4, nil, "iron-plate")
+    A.eq(new, "x = \"iron-plate\"", "vloženo v uvozovkách")
+    A.eq(caret, #new, "kurzor za vloženým")
+    A.eq(sel, nil, "nic neoznačeno")
+    local stale = { first = 1, last = 6, region_end = 6, text = "SIGNAL" }
+    A.eq((S.insert_signal("SIGNAL!", 7, stale, "signal-A")), "SIGNAL!\"signal-A\"", "text se změnil → neplatí")
+    A.eq(S.next_placeholder("a = SET_CONDITION + B", 1, 100), 5, "víceslovné zástupné slovo, jednopísmenné ne")
+  end },
+  { "okno: výběr signálu po šabloně if vyplní signál, označí NUMBER a tlačítko vyprázdní", function()
+    G.reset()
+    for _, name in ipairs({ "scripts.gui.window", "scripts.gui.editor", "scripts.gui.events" }) do
+      package.loaded[name] = nil
+    end
+    local player = F.player(1)
+    F.install({ player })
+    local e = G.entity(1)
+    e.name = "pyntr-pythonator"
+    require("scripts.controller").create(e)
+    local events = require("scripts.gui.events")
+    events.on_gui_opened({ player_index = 1, entity = e })
+    local refs = require("scripts.gui.window").get(player)
+    refs.code.text = "def loop():"
+    events.on_gui_text_changed({ player_index = 1, element = refs.code })
+    local row = refs.snippets.pyntr_snippets_code
+    events.on_gui_click({ player_index = 1, element = row.pyntr_snippet_if })
+    local pick = row.pyntr_signal_pick
+    pick.elem_value = { type = "virtual", name = "signal-A" }
+    events.on_gui_elem_changed({ player_index = 1, element = pick })
+    A.eq(refs.code.text, "def loop():\n    if inp[\"signal-A\"] > NUMBER:\n        pass", "text")
+    A.eq(pick.elem_value, nil, "tlačítko vyprázdněné")
+    local text = refs.code.text
+    local at = text:find("NUMBER", 1, true)
+    A.eq(refs.code.selection[1], S.char_count(text, at), "označené NUMBER")
   end },
 }

@@ -8,6 +8,8 @@ M.INDENT = "    "
 
 --- Šířka popisku řádku lišty (px). Laditelné.
 M.LABEL_WIDTH = 70
+--- Velikost tlačítka výběru signálu (px). Laditelné.
+M.PICK_SIZE = 28
 
 --- Řádky lišty: id řádku (popisek v locale [pyntr-gui] snippets-<id>) → id šablon v pořadí tlačítek.
 M.ROWS = {
@@ -143,6 +145,47 @@ function M.insert(text, caret, snippet)
   return new, sel_start, sel_start + #snippet.select - 1, from - 1 + #block
 end
 
+--- Zástupné slovo šablony: identifikátor jen z velkých písmen a podtržítek, aspoň 2 znaky (SIGNAL, SET_CONDITION).
+--- Explicitní ASCII třídy – %w závisí na locale.
+local PLACEHOLDER = "%f[A-Za-z0-9_][A-Z][A-Z_]+%f[^A-Za-z0-9_]"
+--- Zástupné slovo, které nahradí vybraný signál.
+M.SIGNAL_PLACEHOLDER = "SIGNAL"
+
+--- První zástupné slovo v úseku textu.
+--- @param text string
+--- @param from integer první bajt hledání
+--- @param to integer poslední bajt, kde smí slovo končit
+--- @return integer|nil first
+--- @return integer|nil last
+function M.next_placeholder(text, from, to)
+  local first, last = text:find(PLACEHOLDER, from)
+  if first and last <= to then return first, last end
+end
+
+--- Vloží vybraný signál. Je-li označené zástupné SIGNAL z poslední šablony (`sel`, text se od vložení
+--- nezměnil), nahradí ho jménem signálu a vrátí další zástupné slovo šablony k označení; jinak vloží
+--- "jméno" v uvozovkách na místo psaní.
+--- @param text string
+--- @param caret integer|nil místo psaní (bajty před ním)
+--- @param sel table|nil { first, last, region_end, text } označení z poslední šablony
+--- @param key string kanonický klíč signálu
+--- @return string new_text
+--- @return integer new_caret
+--- @return table|nil new_sel označení dalšího zástupného slova (stejný tvar jako `sel`)
+function M.insert_signal(text, caret, sel, key)
+  if sel and sel.text == text and text:sub(sel.first, sel.last) == M.SIGNAL_PLACEHOLDER then
+    local new = text:sub(1, sel.first - 1) .. key .. text:sub(sel.last + 1)
+    local new_caret = sel.first - 1 + #key
+    local region_end = sel.region_end + #key - (sel.last - sel.first + 1)
+    local first, last = M.next_placeholder(new, new_caret + 1, region_end)
+    local next_sel = first and { first = first, last = last, region_end = region_end, text = new } or nil
+    return new, new_caret, next_sel
+  end
+  if not caret or caret > #text then caret = #text end
+  local quoted = "\"" .. key .. "\""
+  return text:sub(1, caret) .. quoted .. text:sub(caret + 1), caret + #quoted, nil
+end
+
 --- Počet znaků UTF-8 v prvních `bytes` bajtech textu.
 --- @param text string
 --- @param bytes integer
@@ -173,6 +216,11 @@ function M.build_bar(parent)
                 style = "pyntr_snippet_button",
                 tooltip = { "pyntr-gui.snippet-tooltip", { "pyntr-gui.snippet-" .. id }, s.code },
                 tags = { pyntr_action = "snippet", snippet = id } })
+    end
+    if row_def.id == "code" then
+      local pick = row.add({ type = "choose-elem-button", name = "pyntr_signal_pick", elem_type = "signal",
+                             tooltip = { "pyntr-gui.snippet-signal" }, tags = { pyntr_action = "signal_pick" } })
+      pick.style.size = M.PICK_SIZE
     end
   end
   return bar
