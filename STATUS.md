@@ -23,22 +23,18 @@ vazby z portálu), výkon a kompatibilita – viz `ROADMAP.md` M2–M4.
 - Ověřeno na 2.1.23 (0.2.0): unit 315/0, vanilla 33/0 (2 skip), Space Age 35/0, mods pymodpack 3.1.0 / bobrevamp 3.0.1 /
   aai-industry 0.7.5 ✓, výkon beze změny, starý save z 2.0.77 (255 budov) se načte a programy běží.
 
+- Verze 0.3.0 vydaná (2026-11-22, Factorio 2.1.24): lišta šablon + výběr signálu pod editorem (vkládá na místo
+  posledního psaní – API kurzor nezná), `config(label, icon)`, ALT režim s řadami čtených vstupů a výstupů po drátech
+  a vlastními šipkami na hraně (`hide-alt-info`), ikona z výběru v uvozovkách = klíč signálu, podrobná nápověda
+  (config(), Okno a ALT, Knihovna s PID). Revize kódu před vydáním našla 4 chyby (opraveny + regresní testy).
+  Ověřeno: unit 339/0, vanilla 35/0, Space Age 37/0, výkon = 0.2.2 na téže verzi hry. Portál: popis, 5 obrázků, GIF.
+
 ## Rozpracováno
 
-- 0.3.0 (verze už v info.json) – funkce hotové a ověřené ve hře, nevydané:
-  - Lišta šablon pod editorem + výběr signálu (spec `docs/specs/2026-11-22-snippets-design.md`, plán
-    `docs/plans/2026-11-22-snippets.md`); vkládá na místo posledního psaní (API kurzor nezná).
-  - ALT režim a popis budovy (plán `docs/plans/2026-11-22-alt-mode.md`): `config(label, icon)`, řady čtených vstupů
-    a výstupů po drátech, vlastní šipky na hraně (šipky enginu vypnuté `hide-alt-info`), ikona programu se stínem;
-    ikona z výběru v uvozovkách = klíč signálu (`signals.tag_key`).
-  - Nápověda: karty config() a Okno a ALT, podrobná Knihovna (PID), user-guide.
-  - Ověřeno: unit 336/0, vanilla 35/0.
+- Nic. GIF v popisu na portálu (`docs/screenshots/alt-mode.gif`) se zobrazí až po pushi na GitHub.
 
 ## Další krok
 
-0. Vydání 0.3.0: changelog, `docs/mod-portal.md` + obrázky (šablony, ALT, config), testy space-age + `run-perf.sh`
-   (měnil se zápis výstupů), jedna nezávislá revize kódu celé 0.3.0, pak `tools/publish.sh`; plány v `docs/plans/`
-   po vydání smazat.
 1. Odpovědět hráči na portálu (hlášení red/green): opraveno v 0.2.2.
 2. Projít zpětnou vazbu a hlášení chyb na portálu → seznam bugů sem.
 3. Odložené drobnosti (`docs/development.md` → „Známá omezení“): undo (Ctrl+Z) bez kódu; překlad všech programů

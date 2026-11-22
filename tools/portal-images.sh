@@ -27,10 +27,15 @@ for image in "${IMAGES[@]}"; do echo "Obrázek: $(basename "$image") ($(du -h "$
 IDS=()
 for image in "${IMAGES[@]}"; do
   INIT="$(curl -sS -H "Authorization: Bearer $KEY" -F "mod=$MOD" "$API/v2/mods/images/add")"
-  URL="$(printf '%s' "$INIT" | grep -oE '"upload_url" *: *"[^"]+"' | sed -E 's/.*"(https[^"]+)"/\1/')"
+  # `|| true`: grep bez shody by s pipefail ukončil skript potichu – chybu chceme vypsat níž
+  URL="$(printf '%s' "$INIT" | grep -oE '"upload_url" *: *"[^"]+"' | sed -E 's/.*"(https[^"]+)"/\1/' || true)"
   [ -z "$URL" ] && { echo "images/add selhalo: $INIT"; exit 1; }
   RESULT="$(curl -sS -F "image=@$(cygpath -m "$image")" "$URL")"
-  ID="$(printf '%s' "$RESULT" | grep -oE '"id" *: *"[0-9a-f]+"' | sed -E 's/.*"([0-9a-f]+)"/\1/')"
+  ID="$(printf '%s' "$RESULT" | grep -oE '"id" *: *"[0-9a-f]+"' | sed -E 's/.*"([0-9a-f]+)"/\1/' || true)"
+  # Obrázek už na portálu je (nahraný dřív): portál vrátí chybu bez id, id obrázku je ale SHA-1 souboru.
+  if [ -z "$ID" ] && printf '%s' "$RESULT" | grep -q 'already exists'; then
+    ID="$(sha1sum "$image" | cut -d' ' -f1)"
+  fi
   [ -z "$ID" ] && { echo "Nahrání $(basename "$image") selhalo: $RESULT"; exit 1; }
   echo "Nahráno $(basename "$image") → $ID"
   IDS+=("$ID")
