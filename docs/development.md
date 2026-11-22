@@ -139,6 +139,8 @@ bez chyby a se zachovaným stavem (jednorázová sonda přes `remote.call("pyntr
 
 Kontrola na Factoriu 2.1.23 (2026-10-23, verze 0.2.0): idle 0,10, decider 0,14, pass 1,62, hyst 15,3 ms/tick;
 sekvence (150 budov) seq-tick 1,09, seq-change 0,56, seq-60 0,20 – v rámci šumu stejné jako na 2.0.77.
+Kontrola na Factoriu 2.1.24 (2026-11-22, verze 0.3.0 – ikony v ALT, háček po zápisu výstupů): pass 1,76, hyst 16,29;
+vydaná 0.2.2 na téže verzi hry pass 1,72, hyst 16,32 → beze změny (rozdíl proti 2.1.23 je verzí hry).
 
 | Režim | ms/tick | µs na budovu |
 |---|---|---|
@@ -213,6 +215,24 @@ Skripty jsou zdroj pravdy, výstupy (PNG, `prototypes/graphics_data.lua`) se ru�
 - Vektorové operace jsou zhruba stejně drahé jako ruční smyčka (`lua tools/bench-lang.lua`: `each2x` vs `loop2x`); řetězení `where(...).each(...)` = víc průchodů. Výhodou je hlavně kratší zápis.
 - `timer` po výpadku proudu (`dt` přes několik period) vystřelí jen jednou; `pid` s mezemi při saturaci nepřičítá integrál (podmíněná integrace), výstup po odchodu ze saturace skočí.
 - Panel signálů ukazuje kvalitu jen v tooltipu (ikona `sprite-button` kvalitu nevykreslí).
+
+## Obrázky a GIF ze hry
+
+Hra umí vyfotit výřez světa (`game.take_screenshot`, ne v headless) – i s ALT režimem (`show_entity_info`) a okny
+(`show_gui`). Snímky ukládá do `%APPDATA%\Factorio\script-output\pyntr\`. Příkazy `/c` vypnou ve savu achievementy –
+snímej v testovací kopii savu. Handlery z `/c` platí jen do uložení / načtení hry.
+
+- ALT režim kolem hráče (zoom 2 = blíž):
+  `/c game.take_screenshot{zoom=2, resolution={1920,1080}, show_entity_info=true, anti_alias=true, hide_clouds=true, path="pyntr/alt.png"}`
+- Okno budovy – po příkazu máš do 5 s otevřít okno:
+  `/c local p=game.player; script.on_nth_tick(300, function() game.take_screenshot{player=p, show_gui=true, resolution={1920,1080}, hide_clouds=true, path="pyntr/window.png"}; script.on_nth_tick(300, nil) end)`
+- Série pro GIF – 90 snímků po 4 ticích (6 s, 15 snímků/s), ALT režim; pro GIF s oknem přidej `show_gui=true` a zvyš počet:
+  `/c local p, n = game.player, 0; script.on_nth_tick(4, function() n = n + 1; game.take_screenshot{player=p, zoom=2, resolution={1280,720}, show_entity_info=true, hide_clouds=true, path=string.format("pyntr/gif/f%03d.png", n)}; if n >= 90 then script.on_nth_tick(4, nil) end end)`
+- GIF ze série: `uv run tools/make-gif.py "$APPDATA/Factorio/script-output/pyntr/gif" docs/screenshots/<jméno>.gif --fps 15 --width 800`
+  (před další sérií starou složku `gif` smaž – skript bere všechny snímky ve složce).
+- Galerie portálu bere PNG z `docs/screenshots/` (`tools/portal-images.sh`); GIF do popisu (`docs/mod-portal.md`)
+  odkazem na soubor v repozitáři na GitHubu (`https://raw.githubusercontent.com/Ypsilonx/mod_factorio_python/master/docs/screenshots/<jméno>.gif`)
+  – funguje až po pushi.
 
 ## Publikace (mods.factorio.com)
 - Popis na portálu (EN): `docs/mod-portal.md`; shrnutí = `description` v `Pythonator/info.json` (max. 500 znaků).
