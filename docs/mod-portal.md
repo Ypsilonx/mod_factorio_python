@@ -36,6 +36,20 @@ def loop():
 The display on the building shows scrolling code while the program runs, frozen text while paused, red text on
 an error and stays dark without code or power. A status LED blinks green / shines yellow / red.
 
+## New in 0.3
+
+![ALT mode: inputs, outputs and program icon above every Pythonator](https://raw.githubusercontent.com/Ypsilonx/mod_factorio_python/master/docs/screenshots/alt-mode.gif)
+
+- **Snippet bar** below the editor – buttons insert ready-made code (`def loop`, `if`, `out[…] =`, `latch`, `timer`,
+  `pid`, `.where` …). The first UPPERCASE placeholder is selected, so you just type over it. A **signal picker**
+  fills the `SIGNAL` placeholder and jumps to the next one – no need to know internal signal names.
+- **Label and icon:** `config(label="Gas monitor", icon="petroleum-gas")` – the label is shown in the building
+  tooltip, the icon in the middle of the building. Both travel with blueprints.
+- **ALT mode** shows what the building does at a glance: the signals the program reads on the input side, the
+  signals it sends on the output side (red / green background = single wire), arrows on the edge of the building.
+- **Much more detailed help** – every `config()` parameter, every library function with examples, and what
+  `kp`, `ki`, `kd` in `pid()` actually mean and how to tune them.
+
 ## Program model and timing
 
 - A program must define **`loop()`**. It is called once per tick (or once per interval, see `config`).
@@ -46,8 +60,11 @@ an error and stays dark without code or power. A status LED blinks green / shine
   function needs `global name` (as in Python). Local variables are dropped when the function returns.
 - **Time:** `tick` – ticks the program has run (stops while paused and without power), `game_tick` – the game
   tick, `dt` – ticks since the previous `loop()`.
-- **`config(interval=N, outputs="hold")`** – only as a top-level statement. `interval` runs `loop()` every Nth
-  tick, `outputs="clear"` clears the outputs before every `loop()` (`"hold"` keeps them, default).
+- **`config(...)`** – program settings, a top-level statement, every parameter optional, values written directly:
+  - `interval=N` – runs `loop()` every Nth tick (default 1)
+  - `outputs="hold" | "clear"` – outputs keep their value (default) or are cleared before every `loop()`
+  - `label="text"` – building description in its tooltip
+  - `icon="signal"` – icon in the middle of the building, always visible
 
 **Controls:** ▶ runs (changed code is compiled and starts from scratch, otherwise the program continues), ⏸ pauses
 (state is kept), ⟳ resets (globals from scratch, initialization again), ⏭ runs one `loop()` while paused.
@@ -69,7 +86,7 @@ The editor is read-only while running. Errors show the line in red; click the er
 - `"iron-plate"` – item, fluid or virtual signal by name
 - `"iron-plate@rare"` – with quality
 - `"recipe:iron-plate"`, `"entity:…"`, `"space-location:…"`, `"asteroid-chunk:…"`, `"quality:…"` – another type
-- an icon from the selector in the editor corner, e.g. `[item=iron-plate]` – same as text
+- an icon from the selector in the editor corner, e.g. `[item=iron-plate]` – same as text, with or without quotes
 
 Typos in keys are reported when compiling, with a suggestion of the right name.
 
@@ -119,10 +136,13 @@ its own name:
 - `latch(name, set, reset)` – flip-flop: `set` turns it on, `reset` off (reset wins). Returns `True`/`False`.
 - `timer(name, period)` – `True` once every `period` ticks, otherwise `False`
 - `edge(name, value)` – `1` when the value just became true, `-1` when it just stopped, otherwise `0`
-- `counter(name, step=1, reset=False)` – every call adds `step`, `reset` sets it to zero
+- `counter(name)`, `counter(name, step)`, `counter(name, step, reset)` – every call adds `step` (default 1), a true
+  `reset` sets it to zero (arguments are positional – keyword arguments are not supported)
 - `delay(name, value, n)` – the value from `n` `loop()` calls ago (0 until filled; `n` ≤ 1000)
-- `pid(name, setpoint, measured, kp, ki, kd, lo, hi)` – PID controller, returns the control output; `lo` and `hi`
-  are optional limits with integral protection (anti-windup)
+- `pid(name, setpoint, measured, kp, ki, kd, lo, hi)` – PID controller that keeps `measured` at `setpoint` and
+  returns the control output. `kp` reacts to the current error, `ki` removes a permanent error over time, `kd`
+  damps overshoot (usually 0 in Factorio); `lo` and `hi` are optional output limits with anti-windup. Start with
+  `ki = kd = 0`, raise `kp`, then add a small `ki` (about `kp / 100`) – the in-game help explains it step by step.
 
 ## Examples
 
@@ -199,11 +219,12 @@ Measured with 150 buildings running a simple sequence (Factorio 2.1.23, `--bench
 
 ## Building window and help
 
-- **Editor** with line numbers, signal icon selector and a draft that survives closing the window.
+- **Editor** with line numbers, signal icon selector, snippet bar with a signal picker and a draft that survives
+  closing the window.
 - **Live panels:** input wires, actual output wire state, global variables, library elements, `print()` log,
   cost of the last run against the watchdog limit.
-- **Help window** (**?**) next to the editor: basics, signals, language, library, performance and examples to
-  insert. The same reference is in **Tips and tricks** (category Pythonator), available any time.
+- **Help window** (**?**) next to the editor: basics, config(), window and ALT mode, signals, language, library,
+  performance and examples to insert. The same reference is in **Tips and tricks** (category Pythonator), available any time.
 - **Safety:** a watchdog stops runaway loops, a memory limit guards global variables (both map settings); an error
   stops the program and shows the line.
 - **Multiplayer safe and deterministic** – all state lives in the save.
@@ -223,6 +244,8 @@ data, tested with **Pyanodon's** (pymodpack), **Bob's** (bobrevamp) and **AAI In
 
 - The Tab key does nothing in the editor (a game limitation) – indent with spaces; pasted tabs work.
 - The signal icon selector sits in the bottom-right corner of the editor and scrolls away with long code.
+- The game does not tell mods where the text cursor is, so snippets and picked signals are inserted where you last
+  typed, not where you clicked.
 - `int` and `float` are not distinguished (`6 / 2` prints `3`).
 
 ---

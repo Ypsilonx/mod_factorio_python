@@ -1,4 +1,24 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.3.0
+Date: 2026-11-22
+  Features:
+    - Snippet bar below the editor: buttons insert ready-made code (def loop, if, if/else, inp, out, print, latch,
+      timer, edge, counter, delay, pid, where, each) where you last typed. Statements go on a new line with the
+      right indentation and the first UPPERCASE placeholder is selected, so you just type over it.
+    - Signal picker in the snippet bar: replaces the selected SIGNAL placeholder and selects the next one, or
+      inserts the signal name in quotes.
+    - config(label="...") sets the building description shown in its tooltip; config(icon="...") shows an icon in the
+      middle of the building. Both are part of the code, so they travel with blueprints.
+    - ALT mode shows the signals the program reads (by name, or Each when it reads the whole set) on the input side
+      and the signals it currently sends on the output side, with a red / green background for single-wire
+      signals. The input and output arrows are drawn on the edge of the building so they do not cover the icons.
+  Changes:
+    - A string that is exactly one icon from the editor's icon picker ("[item=iron-plate]") now works as a signal
+      key. Previously it was reported as an unknown signal.
+    - Help: new config() and Window and ALT tabs, the library tab describes every function in detail (including
+      what kp, ki, kd, lo and hi mean in pid() and how to tune it). The new tabs are also in Tips and tricks.
+    - The print() log has a gap from the buttons above it.
+---------------------------------------------------------------------------------------------------
 Version: 0.2.2
 Date: 2026-11-17
   Bugfixes:

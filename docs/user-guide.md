@@ -92,7 +92,7 @@ Stavové prvky mají stav pod jménem. Ten přežije uložení hry a Reset ho sm
 | `latch(jméno, set, reset)` | klopný obvod, přednost má reset |
 | `timer(jméno, perioda)` | `True` jednou za periodu ticků |
 | `edge(jméno, hodnota)` | `1` náběžná hrana, `-1` sestupná, `0` žádná |
-| `counter(jméno, krok=1, reset=False)` | počítadlo |
+| `counter(jméno)`, `counter(jméno, krok)`, `counter(jméno, krok, reset)` | počítadlo (krok výchozí 1; argumenty jen pozičně) |
 | `delay(jméno, hodnota, n)` | hodnota z doby před n voláními `loop()` |
 | `pid(jméno, žádaná, měřená, kp, ki, kd, lo, hi)` | PID regulátor s volitelnými mezemi |
 

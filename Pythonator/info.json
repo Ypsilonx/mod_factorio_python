@@ -4,6 +4,6 @@
   "title": "Pythonator – Programmable Combinator",
   "author": "Ypsilonx",
   "factorio_version": "2.1",
-  "description": "A combinator you program in Python. Replace tangled combinator setups with readable code – loop() runs every tick with deterministic 1-tick timing, like vanilla combinators. [Early development – feedback welcome]",
+  "description": "A combinator you program in Python. Replace tangled combinator setups with readable code – loop() runs every tick with deterministic 1-tick timing, like vanilla combinators. Snippet buttons and a signal picker help you start, ALT mode shows what every building reads and sends. [Early development – feedback welcome]",
   "dependencies": ["base >= 2.1.0"]
 }
