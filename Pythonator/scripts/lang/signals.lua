@@ -15,6 +15,18 @@ M.TAG_TYPES = {
   ["space-location"] = "space-location", ["asteroid-chunk"] = "asteroid-chunk", quality = "quality",
 }
 
+--- Typ SignalID → předpona sprite cesty.
+M.SPRITE_TYPE = { item = "item", fluid = "fluid", virtual = "virtual-signal", recipe = "recipe", entity = "entity",
+  ["space-location"] = "space-location", ["asteroid-chunk"] = "asteroid-chunk", quality = "quality" }
+
+--- Sprite cesta signálu (bez kvality), nebo nil u neznámého typu.
+--- @param sid table|nil SignalID {type, name}
+--- @return string|nil
+function M.sprite(sid)
+  local prefix = sid and M.SPRITE_TYPE[sid.type or "item"]
+  return prefix and (prefix .. "/" .. sid.name)
+end
+
 local IS_TYPE, IS_PLAIN = {}, {}
 for _, t in ipairs(M.ALL_TYPES) do IS_TYPE[t] = true end
 for _, t in ipairs(M.PLAIN_TYPES) do IS_PLAIN[t] = true end

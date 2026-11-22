@@ -2,6 +2,7 @@
 --- smrt (kód do ducha), údržba po změně modů a probuzení do plánovače.
 local controller = require("scripts.controller")
 local indicator = require("scripts.indicator")
+local alt_icons = require("scripts.alt_icons")
 local io = require("scripts.io")
 local scheduler = require("scripts.scheduler")
 
@@ -79,6 +80,7 @@ function M.remove(unit)
   if not ctl then return end
   if ctl.led and ctl.led.valid then ctl.led.destroy() end
   if ctl.lcd and ctl.lcd.valid then ctl.lcd.destroy() end
+  alt_icons.destroy(ctl)
   io.detach_outputs(ctl.outputs)
   controller.destroy(unit)
   for _, f in ipairs(M.on_removed) do f(unit) end
@@ -103,9 +105,12 @@ function M.on_post_died(event)
 end
 
 --- Údržba po změně modů nebo verze: založit tabulky, uklidit zaniklé budovy, obnovit chybějící skryté
---- výstupy (stav jejich drátu se pošle celý znovu) a přestavět plán.
+--- výstupy (stav jejich drátu se pošle celý znovu), překreslit LED, displej a ikony ALT a přestavět plán.
 function M.on_configuration_changed()
   storage.controllers = storage.controllers or {}
+  -- všechny objekty kreslení modu znovu (LED, displej, ikony ALT): uklidí i objekty, které starší verze
+  -- kreslila a nová už nezná
+  rendering.clear("Pythonator")
   for unit, ctl in pairs(storage.controllers) do
     if not ctl.entity.valid then
       M.remove(unit)
@@ -121,6 +126,7 @@ function M.on_configuration_changed()
         io.flush(ctl)
       end
       indicator.update(ctl, true)
+      alt_icons.draw(ctl)
     end
   end
   scheduler.rebuild(game.tick)

@@ -1,6 +1,7 @@
 --- Panely okna: vstupy R | G, výstupy (skutečný stav drátu), globální proměnné, stav prvků knihovny
 --- a log print(). Obnovují se jen při otevřeném okně (events.on_refresh) a prvky se mění na místě.
 local R = require("scripts.lang.builtins")
+local sig = require("scripts.lang.signals")
 local elements = require("scripts.lang.elements")
 local resolver = require("scripts.resolver")
 
@@ -15,10 +16,6 @@ M.REPR_MAX = 60
 M.GLOBALS_MAX = 40
 --- Sloupců v mřížce signálů.
 M.SIGNAL_COLUMNS = 6
-
---- Typ SignalID → předpona sprite cesty.
-local SPRITE_TYPE = { item = "item", fluid = "fluid", virtual = "virtual-signal", recipe = "recipe", entity = "entity",
-  ["space-location"] = "space-location", ["asteroid-chunk"] = "asteroid-chunk", quality = "quality" }
 
 --- Řádky globálů {jméno, repr} seřazené podle jména, bez stavu prvků knihovny.
 --- @param G table globály programu
@@ -94,7 +91,7 @@ function M.rows_signals(ps, max)
   for i = 1, math.min(#ps, max) do
     local key, value = ps[i][1], ps[i][2]
     local sid = res:resolve(key)
-    local sprite = sid and SPRITE_TYPE[sid.type] and (SPRITE_TYPE[sid.type] .. "/" .. sid.name) or "utility/questionmark"
+    local sprite = sig.sprite(sid) or "utility/questionmark"
     local tooltip = key .. " = " .. tostring(value)
     -- nula na síti neexistuje: v panelu je jen výslovně zapsaný výstup, který na drát nejde
     if value == 0 then tooltip = { "", tooltip, "\n", { "pyntr-gui.output-zero" } } end

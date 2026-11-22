@@ -64,6 +64,15 @@ end
 --- Stav kontroléru přes remote.
 function M.state(entity) return remote.call("pyntr", "get_state", entity.unit_number) end
 
+--- Počet objektů kreslení viditelných jen v ALT režimu nad budovou (ikony výstupů).
+function M.alt_objects(entity)
+  local n = 0
+  for _, obj in ipairs(rendering.get_all_objects("Pythonator")) do
+    if obj.only_in_alt_mode and obj.target.entity == entity then n = n + 1 end
+  end
+  return n
+end
+
 --- Vyhodí chybu, pokud a ~= b.
 function M.eq(a, b, what)
   if a ~= b then error(what .. ": čekáno " .. tostring(b) .. ", dostáno " .. tostring(a), 2) end

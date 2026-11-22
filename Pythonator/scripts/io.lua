@@ -61,8 +61,10 @@ end
 --- @param out LuaEntity skrytý konstantní kombinátor
 --- @param state table { sent = {klíč → hodnota}, slot = {klíč → index}, free = {index…}, top = max index }
 --- @param want table klíč → hodnota
+--- @return boolean ok false = výstupy se nevešly
+--- @return boolean changed změnila se sada klíčů na drátu (přidaný nebo odebraný signál)
 local function flush_wire(out, state, want)
-  local cb
+  local cb, changed = nil, false
   for key in pairs(state.sent) do
     if want[key] == nil then
       cb = cb or out.get_or_create_control_behavior()
@@ -71,6 +73,7 @@ local function flush_wire(out, state, want)
       section.clear_slot(slot)
       state.sent[key], state.slot[key] = nil, nil
       state.free[#state.free + 1] = index
+      changed = true
     end
   end
   local res = resolver.get()
@@ -90,15 +93,16 @@ local function flush_wire(out, state, want)
       local section, slot = section_slot(cb, index)
       if not section then
         state.free[#state.free + 1] = index
-        return false
+        return false, changed
       end
+      if state.sent[key] == nil then changed = true end
       state.slot[key] = index
       section.set_slot(slot, { value = { type = sid.type, name = sid.name, quality = sid.quality, comparator = "=" },
                                min = value })
       state.sent[key] = value
     end
   end
-  return true
+  return true, changed
 end
 
 --- Klíče výslovně zapsané jako 0 (v out nebo out_red/out_green), které na drát nejdou – součet je nenese.
@@ -121,11 +125,12 @@ end
 --- obnoví ho údržba budovy a stav jeho drátu se pak pošle celý znovu.
 --- @param ctl table kontrolér s ctl.outputs = { red, green }, ctl.out = { both, red, green }
 ---   a ctl.out_zero (stejné členění, výslovně zapsané nuly; ve starém savu do prvního běhu chybí)
---- @return boolean false = výstupy se nevešly (hra nepřidala další sekci skrytého kombinátoru)
+--- @return boolean ok false = výstupy se nevešly (hra nepřidala další sekci skrytého kombinátoru)
+--- @return boolean changed změnila se sada signálů na některém drátu
 function M.flush(ctl)
   ctl.wires = ctl.wires or {}
   local zeros = ctl.out_zero
-  local ok = true
+  local ok, changed = true, false
   for wire, out in pairs(ctl.outputs) do
     local state = ctl.wires[wire]
     if not state then
@@ -134,11 +139,13 @@ function M.flush(ctl)
     end
     if out.valid then
       local want = M.desired(ctl.out.both, ctl.out[wire])
-      if not flush_wire(out, state, want) then ok = false end
+      local wire_ok, wire_changed = flush_wire(out, state, want)
+      if not wire_ok then ok = false end
+      if wire_changed then changed = true end
       state.zero = zeros and zero_keys(zeros.both, zeros[wire], want)
     end
   end
-  return ok
+  return ok, changed
 end
 
 --- Konektory vstupních zdrojů programu.

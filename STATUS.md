@@ -25,7 +25,10 @@ vazby z portálu), výkon a kompatibilita – viz `ROADMAP.md` M2–M4.
 
 ## Rozpracováno
 
-- Nic.
+- 0.3.0: šablony a výběr signálu pod editorem (spec `docs/specs/2026-11-22-snippets-design.md`, plán
+  `docs/plans/2026-11-22-snippets.md`). Task 1 (spike `select`) ověřen ve hře ✓ (i diakritika). Task 2 (celá lišta, příkazy s odsazením) ověřen ve hře ✓. Další: task 3 (výběr signálu).
+- 0.3.0: ikony výstupů v ALT (`scripts/alt_icons.lua`, plán `docs/plans/2026-11-22-alt-mode.md`) – unit 330/0,
+  vanilla 35/0, čeká na ruční pohled ve hře. Mezera nad logem opravena (`top_margin`).
 
 ## Další krok
 
@@ -42,3 +45,5 @@ vazby z portálu), výkon a kompatibilita – viz `ROADMAP.md` M2–M4.
 - ❌ Tab v editoru (`text-box`) – nedělá nic a skript ho nedoplní, API nezná pozici kurzoru. Nevracet se.
 - ❌ Vlastní výběr signálu místo nativního `icon_selector` – nezná kurzor, rozhodnutí: nechat nativní.
 - ❌ Logo Pythonu na budově – ochranná známka PSF; displej ukazuje jen řádky kódu.
+- ❌ Vlastní šipky vstup/výstup (při najetí myší i v ALT) – zdvojovaly se se šipkami enginu a příznak `hide-alt-info`
+  je nevypne. Šipky nechává engine (jen v ALT).

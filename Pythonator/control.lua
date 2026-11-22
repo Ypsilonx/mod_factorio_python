@@ -6,6 +6,7 @@ local controller = require("scripts.controller")
 local lifecycle = require("scripts.lifecycle")
 local scheduler = require("scripts.scheduler")
 local indicator = require("scripts.indicator")
+local alt_icons = require("scripts.alt_icons")
 local blueprint = require("scripts.blueprint")
 local gui_events = require("scripts.gui.events")
 require("scripts.remote")
@@ -14,6 +15,8 @@ local FILTERS = { { filter = "name", name = lifecycle.DATA.entity } }
 
 -- Stavová LED se překresluje jen při změně stavu (chyba, výpadek a obnova proudu z plánovače).
 scheduler.on_state_change = indicator.update
+-- Ikony výstupů v ALT režimu se překreslují jen při změně sady signálů na drátech.
+controller.on_flushed = alt_icons.on_flushed
 
 script.on_init(function()
   storage.controllers = {}

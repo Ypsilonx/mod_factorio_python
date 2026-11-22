@@ -171,13 +171,20 @@ local function check_memory(ctl)
   return true
 end
 
+--- Po zápisu výstupů (i bez změny): function(ctl, changed) – changed = změnila se sada signálů na drátech.
+--- Nastavuje control.lua (ikony v ALT režimu); tady bez závislosti na kreslení.
+M.on_flushed = function(_, _) end
+
 --- Zapíše výstupy na dráty, pokud se změnily (zapisovací objekty hlásí `changed`) nebo `force`.
 --- Kontrolér bez skrytých výstupů (jednotkové testy) nic nezapisuje.
 --- @return boolean false = výstupy se nevešly do skrytého kombinátoru (stav CHYBA)
 local function flush(ctl, entry, force)
   local IO = entry.IO
-  local ok = true
-  if ctl.outputs and (force or IO.out.changed or IO.out_red.changed or IO.out_green.changed) then ok = io.flush(ctl) end
+  local ok, changed = true, false
+  if ctl.outputs then
+    if force or IO.out.changed or IO.out_red.changed or IO.out_green.changed then ok, changed = io.flush(ctl) end
+    M.on_flushed(ctl, changed)
+  end
   IO.out.changed, IO.out_red.changed, IO.out_green.changed = nil, nil, nil
   if not ok then ctl.error = errors.make(nil, nil, "too-many-outputs") end
   return ok

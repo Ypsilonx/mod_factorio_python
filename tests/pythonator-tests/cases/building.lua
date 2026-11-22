@@ -139,4 +139,18 @@ return {
       end },
     },
   },
+  {
+    name = "ikony výstupů v ALT: podle sady signálů na drátu, po vymazání výstupů zmizí",
+    setup = function(ctx)
+      H.power(ctx)
+      ctx.p = H.pythonator(ctx, 1, 1, "def loop():\n  out[\"signal-A\"] = 1\n  out_red[\"iron-plate\"] = 2")
+    end,
+    steps = {
+      { ticks = 5, run = function(ctx)
+        H.eq(H.alt_objects(ctx.p), 4, "2× podklad + 2× ikona")
+        remote.call("pyntr", "set_code", ctx.p.unit_number, "def loop(): pass")
+      end },
+      { ticks = 40, run = function(ctx) H.eq(H.alt_objects(ctx.p), 0, "bez výstupů bez ikon") end },
+    },
+  },
 }
