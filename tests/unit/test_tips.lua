@@ -56,7 +56,7 @@ return {
         if name ~= "pyntr-pythonator" then A.eq(proto.indent, 1, name .. ": odsazení pod titulkem") end
       end
     end
-    A.eq(n, 6, "titulek (jak začít) + signály, jazyk, knihovna, výkon, příklady")
+    A.eq(n, 8, "titulek (jak začít) + config(), okno a ALT, signály, jazyk, knihovna, výkon, příklady")
   end },
   { "texty tipů jsou klíče nápovědy budovy (en i cs) a vejdou se do limitů", function()
     local p = load()

@@ -22,7 +22,8 @@ def loop():
 
 | Část | Co dělá |
 |---|---|
-| Editor | kód s čísly řádků. Ikonu signálu vložíš výběrem v rohu editoru. Odsazuj mezerami, Tab v editoru nefunguje. |
+| Editor | kód s čísly řádků. Ikonu signálu vložíš výběrem v rohu editoru (platí bez uvozovek i v nich). Odsazuj mezerami, Tab v editoru nefunguje. |
+| Lišta šablon | tlačítka pod editorem (def loop, if, out, latch, pid …) vloží kus kódu tam, kde jsi naposledy psal (hra neprozradí kurzor); příkaz na nový řádek se správným odsazením. První slovo VELKÝMI písmeny je označené – stačí ho přepsat. |
 | ▶ Play | změněný kód přeloží a spustí od nuly. Nezměněný kód nechá pokračovat. |
 | ⏸ Pauza | zastaví volání `loop()`, stav zůstane. Při pauze jde kód upravovat. |
 | ⟳ Reset | vynuluje globální proměnné a znovu spustí inicializaci nahraného kódu. |
@@ -42,8 +43,17 @@ překladem, nahraný program se nezmění.
 - **Globální proměnné** drží stav mezi ticky i po uložení hry. Přiřazení do nich uvnitř funkce vyžaduje
   `global jméno`, stejně jako v Pythonu.
 - Čas: `tick` (ticky běhu programu), `game_tick` (tick hry), `dt` (ticků od minulého `loop()`).
-- `config(interval=N, outputs="hold")`: `loop()` jen každých N ticků. Volba `outputs="clear"` výstupy
-  před každým `loop()` vymaže.
+- `config(…)` na nejvyšší úrovni, všechny parametry volitelné, hodnoty jen přímo napsané:
+  - `interval=N` – `loop()` jen každý N-tý tick (výchozí 1),
+  - `outputs="hold" | "clear"` – výstupy drží hodnotu (výchozí), nebo se před každým `loop()` vymažou,
+  - `label="text"` – popis budovy v bublině při najetí myší,
+  - `icon="signál"` – ikona uprostřed budovy (vidět trvale).
+
+## ALT režim
+
+Nad každým Pythonatorem: šipky vstupu a výstupu na hraně budovy, na straně vstupu signály čtené v kódu jménem
+(ikona Each = program čte celou sadu), na straně výstupu signály právě posílané na dráty. Podklad ikony značí drát:
+tmavý oba, červený, zelený; co se nevejde, ukáže „+N“. Hodnoty jsou v okně budovy.
 
 ## Signály
 

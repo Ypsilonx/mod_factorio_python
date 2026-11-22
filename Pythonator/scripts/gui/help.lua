@@ -1,16 +1,16 @@
---- Okno nápovědy (tlačítko ? v liště): karty Základy, Signály, Jazyk, Knihovna a Příklady. Texty jsou
+--- Okno nápovědy (tlačítko ? v liště): karty Základy, config(), Okno a ALT, Signály, Jazyk, Knihovna, Výkon a Příklady. Texty jsou
 --- v locale ([pyntr-gui] help-*), kód příkladů je tady (není překládaný; test ověří, že se každý přeloží).
 --- Okno se neotevírá jako player.opened, aby hlavní okno zůstalo otevřené vedle něj.
 local M = {}
 
 local WINDOW = "pyntr_help"
 --- Šířka textu nápovědy (px). Laditelné.
-M.TEXT_WIDTH = 620
+M.TEXT_WIDTH = 700
 --- Výška obsahu karet (px). Laditelné.
 M.HEIGHT = 560
 
 --- Textové karty: id → klíče locale help-<id>-title a help-<id>-text.
-M.SECTIONS = { "basics", "signals", "language", "library", "performance" }
+M.SECTIONS = { "basics", "config", "window", "signals", "language", "library", "performance" }
 
 --- Příklady: id → klíče help-example-<id>-title a -desc; kód se vkládá do editoru.
 M.EXAMPLES = {

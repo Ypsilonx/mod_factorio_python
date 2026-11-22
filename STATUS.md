@@ -31,8 +31,8 @@ vazby z portálu), výkon a kompatibilita – viz `ROADMAP.md` M2–M4.
   vstupů a výstupů po drátech (3 na řadu; šipky ALT kreslí mod na hraně, šipky enginu vypnuté `hide-alt-info` ✓ ověřeno ve hře;
   podklad drátu = poloprůhledný `utility/white_square` pod ikonou), ikona programu
   trvale se stínem; ikona z výběru v uvozovkách = klíč signálu
-  (`signals.tag_key`) – unit 332/0, vanilla 35/0, čeká na ruční pohled ve hře. Pak nápověda (task 4) + zapsat
-  ikonu v uvozovkách do „Známé odchylky od Pythonu“.
+  (`signals.tag_key`) – ověřeno ve hře ✓ (commit 7fa7f1a). Nápověda (task 4): karty config() a Okno a ALT,
+  podrobná Knihovna (PID), user-guide, odchylky – unit 333/0, čeká na pohled ve hře.
 
 ## Další krok
 
