@@ -162,4 +162,35 @@ return {
     local at = text:find("NUMBER", 1, true)
     A.eq(refs.code.selection[1], S.char_count(text, at), "označené NUMBER")
   end },
+  { "regrese z revize: prázdný první řádek, kurzor za signálem, komentář s dvojtečkou", function()
+    local PRINT, OUT = S.get("print"), S.get("out")
+    A.eq((S.insert("\ndef loop():\n    pass", 0, PRINT)), "print(VALUE)\ndef loop():\n    pass",
+         "prázdný první řádek bez odsazení posledního řádku programu")
+    local INP = S.get("inp")
+    local text, first, last, caret = S.insert("x = ", 4, INP)
+    local new, new_caret = S.insert_signal(text, caret, { first = first, last = last, region_end = caret, text = text },
+                                           "signal-A")
+    A.eq(new_caret, #new, "kurzor za ] – ne uvnitř uvozovek")
+    A.eq((S.insert("# vystupy:", 3, OUT)), "# vystupy:\nout[\"SIGNAL\"] = VALUE", "komentář blok nezačíná")
+    A.eq((S.insert("if x:  # pozn", 3, OUT)), "if x:  # pozn\n    out[\"SIGNAL\"] = VALUE", "komentář za dvojtečkou")
+  end },
+  { "regrese z revize: vložený příklad z nápovědy zapomene místo psaní", function()
+    G.reset()
+    for _, name in ipairs({ "scripts.gui.window", "scripts.gui.editor", "scripts.gui.events" }) do
+      package.loaded[name] = nil
+    end
+    local player = F.player(1)
+    F.install({ player })
+    local e = G.entity(1)
+    e.name = "pyntr-pythonator"
+    require("scripts.controller").create(e)
+    local events = require("scripts.gui.events")
+    events.on_gui_opened({ player_index = 1, entity = e })
+    local refs = require("scripts.gui.window").get(player)
+    refs.code.text = "x = 1"
+    events.on_gui_text_changed({ player_index = 1, element = refs.code })
+    events.CLICK.insert_example(player, storage.gui[1], require("scripts.controller").get(1),
+                                { tags = { example = 1 } })
+    A.eq(storage.gui[1].caret, nil, "místo psaní zapomenuté → šablona půjde na konec")
+  end },
 }

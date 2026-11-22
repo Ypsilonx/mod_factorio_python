@@ -80,3 +80,6 @@ script.on_event(defines.events.on_player_left_game, gui_events.on_player_left_ga
 script.on_event(defines.events.on_player_removed, gui_events.on_player_removed)
 -- Obnova otevřených oken (bez otevřeného okna handler hned skončí).
 script.on_nth_tick(gui_events.REFRESH_TICKS, gui_events.on_refresh)
+-- Odložená překreslení ikon v ALT (změna výstupů krátce po předchozím kreslení). MIN_TICKS se musí lišit od
+-- REFRESH_TICKS – on_nth_tick se stejným N by předchozí handler přepsal.
+script.on_nth_tick(alt_icons.MIN_TICKS, alt_icons.on_pending)

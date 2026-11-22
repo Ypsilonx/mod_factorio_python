@@ -19,7 +19,9 @@ local function setup()
   rendering.draw_sprite, rendering.draw_text = record, record
   local e = G.entity(1)
   e.surface = {}
-  local ctl = { entity = e, out = { both = {}, red = {}, green = {} }, outputs = { red = G.output(), green = G.output() } }
+  local ctl = { unit = 1, entity = e, out = { both = {}, red = {}, green = {} },
+                outputs = { red = G.output(), green = G.output() } }
+  storage.controllers = { [1] = ctl }
   return require("scripts.alt_icons"), require("scripts.io"), ctl, drawn
 end
 
@@ -151,5 +153,22 @@ return {
     I.on_flushed(ctl, false)
     A.eq(#alive(drawn), 6, "dokreslená bez další změny")
     A.eq(ctl.alt_dirty, nil, "nic nečeká")
+  end },
+  { "odložená změna se dokreslí frontou i když program mezitím stojí (regrese z revize)", function()
+    local I, io, ctl, drawn = setup()
+    game.tick = 100
+    ctl.out.both["signal-A"] = 1
+    I.on_flushed(ctl, select(2, io.flush(ctl)))
+    game.tick = 101
+    ctl.out.both["signal-B"] = 1
+    I.on_flushed(ctl, select(2, io.flush(ctl)))
+    A.eq(storage.alt_pending[1], true, "ve frontě")
+    -- program se pozastaví: žádný další flush, dokreslí to on_pending
+    game.tick = 130
+    I.on_pending()
+    A.eq(#alive(drawn), 6, "dokresleno bez běhu programu")
+    A.eq(next(storage.alt_pending), nil, "fronta prázdná")
+    I.on_pending()
+    A.eq(#alive(drawn), 6, "prázdná fronta nic nedělá")
   end },
 }

@@ -32,7 +32,8 @@ function CLICK.insert_example(_, st, ctl, element)
   local ex = help.EXAMPLES[element.tags.example]
   if not (ctl and ex and actions.view(ctl).can.edit) then return end
   editor.set_text(st.refs, ex.code)
-  st.text = ex.code
+  -- nový text: místo psaní a označení ze starého textu neplatí (šablona by skončila na nesmyslném místě)
+  st.text, st.caret, st.sel = ex.code, nil, nil
   actions.set_draft(ctl, ex.code)
   window.refresh_unit(ctl.unit)
 end

@@ -199,16 +199,36 @@ function M.draw(ctl)
 end
 
 --- Po zápisu výstupů: při změně sady signálů (`changed`) nebo dřív odložené změně překreslí, pokud od
---- posledního kreslení uplynulo MIN_TICKS; jinak změnu odloží (dokreslí ji některý další běh loop()).
+--- posledního kreslení uplynulo MIN_TICKS; jinak budovu zařadí do fronty storage.alt_pending, kterou dokreslí
+--- on_pending – i když program mezitím stojí (pauza, chyba, bez proudu) nebo má dlouhý interval.
 --- @param ctl table
 --- @param changed boolean
 function M.on_flushed(ctl, changed)
   if changed then ctl.alt_dirty = true end
   if not ctl.alt_dirty then return end
   local tick = game.tick
-  if ctl.alt_tick and tick - ctl.alt_tick < M.MIN_TICKS then return end
+  if ctl.alt_tick and tick - ctl.alt_tick < M.MIN_TICKS then
+    storage.alt_pending = storage.alt_pending or {}
+    storage.alt_pending[ctl.unit] = true
+    return
+  end
   ctl.alt_tick = tick
   M.draw(ctl)
+end
+
+--- Dokreslí odložené změny (on_nth_tick(MIN_TICKS)). Bez čekajících budov hned skončí.
+function M.on_pending()
+  local pending = storage.alt_pending
+  if not (pending and next(pending)) then return end
+  storage.alt_pending = {}
+  local tick = game.tick
+  for unit in pairs(pending) do
+    local ctl = storage.controllers[unit]
+    if ctl and ctl.alt_dirty then
+      ctl.alt_tick = tick
+      M.draw(ctl)
+    end
+  end
 end
 
 return M

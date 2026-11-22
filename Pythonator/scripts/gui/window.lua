@@ -96,6 +96,8 @@ function M.refresh(player)
   local text = view.can.edit and actions.text(ctl) or ctl.code
   st.refs.code.read_only = not view.can.edit
   editor.set_text(st.refs, text)
+  -- text změněný zvenku (jiný hráč, Play, nahraný kód): místo psaní a označení ze starého textu neplatí
+  if text ~= st.text then st.caret, st.sel = nil, nil end
   st.text, st.edit, st.code = text, view.can.edit, ctl.code
   status.update(st.refs, view, st)
   panels.refresh(st.refs, ctl)

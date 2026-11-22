@@ -19,7 +19,8 @@ M.ROWS = {
 
 --- Šablony: id → kind, caption (popisek tlačítka – kód, nepřekládá se), code, select (zástupné slovo
 --- k označení, první výskyt). kind "expr" = vloží se přímo na místo psaní, "stmt" = jako řádek(y) pod
---- aktuální řádek, s jeho odsazením. Zástupná slova velkými písmeny: nenahrazené ohlásí překladač.
+--- aktuální řádek, s jeho odsazením. Zástupná slova velkými písmeny; nenahrazené
+--- ohlásí překladač, kromě jména prvku knihovny "NAME" – to je platný řetězec.
 --- Popis je v locale [pyntr-gui] snippet-<id>.
 M.SNIPPETS = {
   { id = "loop", kind = "stmt", caption = "def loop", select = "pass",
@@ -89,10 +90,14 @@ local function indent_of(line)
   return line:match("^[ \t]*")
 end
 
---- Odsazení pro řádek pod `line`: stejné, o úroveň víc za řádkem končícím dvojtečkou.
+--- Odsazení pro řádek pod `line`: stejné, o úroveň víc za řádkem končícím dvojtečkou. Komentář se nepočítá
+--- (`# výstupy:` blok nezačíná, `if x:  # pozn.` ano) – přibližně: komentář bez uvozovek za ním.
+--- Jen ASCII třídy znaků – %s závisí na locale a výsledek jde do sdíleného stavu hry (draft).
 local function indent_below(line)
   local base = indent_of(line)
-  if line:match(":%s*$") then return base .. M.INDENT end
+  if line:match("^[ \t]*#") then return base end
+  local code = line:gsub("#[^\"']*$", "")
+  if code:match(":[ \t\r]*$") then return base .. M.INDENT end
   return base
 end
 
@@ -120,7 +125,8 @@ local function place_statement(text, caret)
   end
   -- prázdný řádek: vlastní odsazení hráče má přednost, jinak podle předchozího neprázdného řádku
   local indent = line
-  if indent == "" then indent = indent_below(last_nonblank(text:sub(1, line_start - 2))) end
+  -- line_start == 1: před řádkem nic není (text:sub(1, -1) by vrátil celý text)
+  if indent == "" and line_start > 1 then indent = indent_below(last_nonblank(text:sub(1, line_start - 2))) end
   return line_start, line_end, "", indent
 end
 
@@ -179,6 +185,8 @@ function M.insert_signal(text, caret, sel, key)
     local region_end = sel.region_end + #key - (sel.last - sel.first + 1)
     local first, last = M.next_placeholder(new, new_caret + 1, region_end)
     local next_sel = first and { first = first, last = last, region_end = region_end, text = new } or nil
+    -- bez dalšího zástupného slova kurzor za konec šablony – jinak by zůstal uvnitř uvozovek ("…|"])
+    if not next_sel then new_caret = region_end end
     return new, new_caret, next_sel
   end
   if not caret or caret > #text then caret = #text end
