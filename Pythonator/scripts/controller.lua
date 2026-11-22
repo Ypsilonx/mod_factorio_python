@@ -205,6 +205,24 @@ local function clear_outputs(ctl)
   return any
 end
 
+--- Údaje programu pro zobrazení na budově: popis (config label → nativní popis kombinátoru v tooltipu),
+--- ikona (config icon) a čtené vstupní signály; ikony v ALT se pak překreslí hned (alt_tick = nil).
+--- @param ctl table
+--- @param program table z compiler.compile
+local function apply_info(ctl, program)
+  ctl.label, ctl.icon, ctl.inputs = program.config.label, program.config.icon, program.inputs
+  if ctl.entity.valid then ctl.entity.combinator_description = ctl.label or "" end
+  ctl.alt_dirty, ctl.alt_tick = true, nil
+end
+
+--- Doplní údaje programu z uloženého kódu (budovy ze starších verzí je nemají). Volá údržba po změně modů.
+--- @param ctl table
+function M.refresh_info(ctl)
+  if ctl.code == "" then return end
+  local program = compile(ctl.code)
+  if program then apply_info(ctl, program) end
+end
+
 --- Nahraje nový kód. Při chybě překladu běží dál starý program a chyba se uloží do compile_error.
 --- Při úspěchu: reset globálů, výstupů a času, inicializace a zapnutí běhu (chyba initu = stav CHYBA).
 --- @param ctl table
@@ -227,6 +245,7 @@ function M.set_code(ctl, source)
   ctl.tick, ctl.last_run, ctl.memory_checked, ctl.resumed = 0, nil, 0, nil
   ctl.interval = program.config.interval
   ctl.outputs_mode = program.config.outputs
+  apply_info(ctl, program)
   ctl.running = true
   local entry = build(ctl, program)
   -- Vymazané výstupy jdou na drát hned; co nastaví init, také (init může výstupy zapsat)

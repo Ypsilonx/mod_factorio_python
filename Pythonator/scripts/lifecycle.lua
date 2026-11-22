@@ -45,6 +45,7 @@ function M.on_built(entity, tags)
   M.clear_parameters(entity)
   local ctl = controller.create(entity)
   ctl.outputs = io.attach_outputs(entity, M.DATA.output)
+  alt_icons.draw(ctl)  -- šipky ALT režimu i bez kódu
   script.register_on_object_destroyed(entity)
   if tags and tags[M.TAG_CODE] then M.load_code(ctl, tags[M.TAG_CODE], tags[M.TAG_RUNNING] ~= false) end
 end
@@ -86,10 +87,12 @@ function M.remove(unit)
   for _, f in ipairs(M.on_removed) do f(unit) end
 end
 
---- Otočení nebo převrácení budovy: LED se přesune na nové místo.
+--- Otočení nebo převrácení budovy: LED a ikony ALT (řady vstupů a výstupů) se přesunou na nové místo.
 function M.on_rotated(entity)
   local ctl = M.is_ours(entity) and controller.get(entity.unit_number)
-  if ctl then indicator.update(ctl, true) end
+  if not ctl then return end
+  indicator.update(ctl, true)
+  alt_icons.draw(ctl)
 end
 
 --- Smrt budovy: duch dostane kód do tagů, aby ho roboti postavili i s programem.
@@ -126,6 +129,7 @@ function M.on_configuration_changed()
         io.flush(ctl)
       end
       indicator.update(ctl, true)
+      controller.refresh_info(ctl)
       alt_icons.draw(ctl)
     end
   end

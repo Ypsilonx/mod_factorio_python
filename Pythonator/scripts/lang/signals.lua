@@ -55,6 +55,20 @@ function M.from_tag(tag_type, name, quality)
   return key
 end
 
+--- Textový klíč z řetězce, který je celý jeden rich text tag signálu ("[item=iron-plate]",
+--- "[virtual-signal=signal-A,quality=rare]") – ikona z výběru vložená do uvozovek; jinak nil.
+--- @param s string
+--- @return string|nil
+function M.tag_key(s)
+  if s:byte(1) ~= 91 then return nil end  -- "[": rychlý odchod pro běžné klíče
+  local tt, nm, q = s:match("^%[([A-Za-z0-9%-]+)=([A-Za-z0-9%-_]+),quality=([A-Za-z0-9%-_]+)%]$")
+  if not tt then
+    tt, nm = s:match("^%[([A-Za-z0-9%-]+)=([A-Za-z0-9%-_]+)%]$")
+    q = "normal"
+  end
+  if tt and M.TAG_TYPES[tt] then return M.from_tag(tt, nm, q) end
+end
+
 --- Levenshteinova vzdálenost dvou řetězců.
 local function distance(a, b)
   local prev = {}
@@ -154,7 +168,7 @@ end
 function Resolver:resolve(key)
   local hit = self.cache[key]
   if hit then return hit.sid, hit.canonical end
-  local stype, name, quality = M.split(key)
+  local stype, name, quality = M.split(M.tag_key(key) or key)
   if not self.protos.quality[quality] then
     return nil, nil, errors.make(nil, nil, "unknown-quality", quality)
   end

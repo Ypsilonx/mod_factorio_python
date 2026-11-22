@@ -16,6 +16,11 @@ local VECTOR_OPS = { each = vector.ARITH_OPS, where = vector.COMPARE_OPS, count 
 --- Je uzel holé jméno objektu signálů?
 local function is_sigobj(e) return e.k == "Name" and M.SIGNAL_OBJS[e.id] ~= nil end
 
+--- Vstupní objekt signálů → drát pro zobrazení čtených signálů (ikony v ALT režimu).
+M.INPUT_WIRES = { inp = "both", red = "red", green = "green" }
+--- Klíč zobrazený za čtení celé sady (inp.items(), inp.where(…), dynamický klíč …).
+M.ALL_KEY = "signal-each"
+
 --- Jména přiřazovaná cílem (uzly Name; Subscript nic nepřiřazuje).
 local function target_names(t, out)
   if t.k == "Name" then
@@ -66,6 +71,7 @@ function C:assignable(n)
 end
 
 --- Přepíše konstantní klíč signálu (Signal nebo Str) na kanonický Str; jiné uzly nechá být.
+--- @return string|nil kanonický klíč, nil = klíč není konstanta
 function C:resolve_key(node)
   local key
   if node.k == "Signal" then
@@ -73,7 +79,7 @@ function C:resolve_key(node)
   elseif node.k == "Str" then
     key = node.v
   else
-    return
+    return nil
   end
   local _, canonical, err = self.resolver:resolve(key)
   if not canonical then
@@ -81,6 +87,24 @@ function C:resolve_key(node)
     error(err, 0)
   end
   node.k, node.v, node.stype, node.tag, node.name, node.quality = "Str", canonical, nil, nil, nil, nil
+  return canonical
+end
+
+--- Zapíše čtený vstupní signál do info.inputs (bez opakování) – jen u vstupních objektů.
+function C:add_input(obj, key)
+  local wire = M.INPUT_WIRES[obj]
+  if not wire then return end
+  local id = wire .. "|" .. key
+  if self.seen_inputs[id] then return end
+  self.seen_inputs[id] = true
+  local inputs = self.info.inputs
+  inputs[#inputs + 1] = { key = key, wire = wire }
+end
+
+--- Čtení klíče z objektu signálů `obj`: klíč přepíše na kanonický a zapíše do čtených vstupů;
+--- nekonstantní klíč se počítá jako čtení celé sady.
+function C:read_key(obj, node)
+  self:add_input(obj, self:resolve_key(node) or M.ALL_KEY)
 end
 
 --- Kontrola čteného jména.
@@ -116,7 +140,7 @@ function C:expr(e, ctx)
     for j, o in ipairs(operands) do
       local op = e.ops[j - 1]
       if (op == "in" or op == "not in") and is_sigobj(o) then
-        self:resolve_key(operands[j - 1])
+        self:read_key(o.id, operands[j - 1])
       else
         self:expr(o, ctx)
       end
@@ -131,17 +155,25 @@ function C:expr(e, ctx)
       errors.raise(op.line, op.col, "bad-op", op.v, e.name)
     end
     if is_sigobj(e.obj) then
-      if e.name == "get" and e.args[1] then self:resolve_key(e.args[1]) end
+      if e.name == "get" and e.args[1] then
+        self:read_key(e.obj.id, e.args[1])
+      else
+        self:add_input(e.obj.id, M.ALL_KEY)
+      end
     else
       self:expr(e.obj, ctx)
     end
     for _, a in ipairs(e.args) do
       -- out.set(inp) / out.add(red): objekt signálů jako sada (jinak objekty signálů nejsou hodnoty).
-      if not ((e.name == "set" or e.name == "add") and is_sigobj(a)) then self:expr(a, ctx) end
+      if (e.name == "set" or e.name == "add") and is_sigobj(a) then
+        self:add_input(a.id, M.ALL_KEY)
+      else
+        self:expr(a, ctx)
+      end
     end
   elseif k == "Subscript" then
     if is_sigobj(e.value) then
-      self:resolve_key(e.index)
+      self:read_key(e.value.id, e.index)
     else
       self:expr(e.value, ctx)
     end
@@ -172,7 +204,11 @@ function C:call(e, ctx)
     errors.raise(e.line, e.col, "unknown-name", name)
   end
   for _, a in ipairs(e.args) do
-    if not (name == "len" and is_sigobj(a)) then self:expr(a, ctx) end
+    if name == "len" and is_sigobj(a) then
+      self:add_input(a.id, M.ALL_KEY)
+    else
+      self:expr(a, ctx)
+    end
   end
 end
 
@@ -200,6 +236,10 @@ function C:config(call, ctx)
       self.info.config.interval = v.v
     elseif kw.name == "outputs" and v.k == "Str" and (v.v == "hold" or v.v == "clear") then
       self.info.config.outputs = v.v
+    elseif kw.name == "label" and v.k == "Str" then
+      self.info.config.label = v.v
+    elseif kw.name == "icon" and (v.k == "Str" or v.k == "Signal") then
+      self.info.config.icon = self:resolve_key(v)
     else
       errors.raise(kw.line, kw.col, "bad-config")
     end
@@ -254,10 +294,11 @@ end
 --- Zkontroluje program a přepíše konstantní klíče signálů na kanonické.
 --- @param ast table Module z parser.parse
 --- @param resolver table z signals.new_resolver
---- @return table info {globals, functions, config}
+--- @return table info {globals, functions, config, inputs} – inputs = čtené vstupní signály { {key, wire}… }
+---   v pořadí výskytu (wire "both" | "red" | "green", key ALL_KEY = čtení celé sady)
 function M.check(ast, resolver)
-  local info = { globals = {}, functions = {}, config = { interval = 1, outputs = "hold" } }
-  local self = setmetatable({ info = info, resolver = resolver }, C)
+  local info = { globals = {}, functions = {}, config = { interval = 1, outputs = "hold" }, inputs = {} }
+  local self = setmetatable({ info = info, resolver = resolver, seen_inputs = {} }, C)
   local defs = {}
   for _, s in ipairs(ast.body) do
     if s.k == "Def" then

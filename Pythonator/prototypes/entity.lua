@@ -37,6 +37,9 @@ entity.fast_replaceable_group = nil
 entity.next_upgrade = nil
 entity.additional_pastable_entities = nil
 entity.max_health = 250
+-- Šipky vstupu a výstupu v ALT režimu kreslí skript na hraně budovy (scripts/alt_icons.lua) – šipky enginu
+-- stojí uvnitř budovy a překrývaly by ikony signálů.
+entity.flags[#entity.flags + 1] = "hide-alt-info"
 entity.collision_box = { { -0.65, -0.65 }, { 0.65, 0.65 } }
 entity.selection_box = { { -1, -1 }, { 1, 1 } }
 entity.input_connection_bounding_box = { { -1, 0 }, { 1, 1 } }

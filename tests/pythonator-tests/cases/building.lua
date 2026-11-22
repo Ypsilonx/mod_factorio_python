@@ -9,6 +9,7 @@ return {
     steps = {
       { ticks = 1, run = function(ctx)
         H.eq(H.hidden_count(ctx), 2, "skryté výstupy po stavbě")
+        H.eq(H.alt_objects(ctx.p), 2, "šipky ALT i u budovy bez kódu")
         ctx.p.destroy({ raise_destroy = true })
       end },
       { ticks = 2, run = function(ctx) H.eq(H.hidden_count(ctx), 0, "skryté výstupy po zbourání") end },
@@ -140,17 +141,25 @@ return {
     },
   },
   {
-    name = "ikony výstupů v ALT: podle sady signálů na drátu, po vymazání výstupů zmizí",
+    name = "ALT a popis: config(label, icon), čtený vstup a výstupy po drátech; prázdný program vše smaže",
     setup = function(ctx)
       H.power(ctx)
-      ctx.p = H.pythonator(ctx, 1, 1, "def loop():\n  out[\"signal-A\"] = 1\n  out_red[\"iron-plate\"] = 2")
+      ctx.p = H.pythonator(ctx, 1, 1, "config(label=\"Test\", icon=\"petroleum-gas\")\ndef loop():\n"
+        .. "  out[\"signal-A\"] = inp[\"signal-B\"] + 1\n  out_red[\"iron-plate\"] = 2")
     end,
     steps = {
-      { ticks = 5, run = function(ctx)
-        H.eq(H.alt_objects(ctx.p), 4, "2× podklad + 2× ikona")
+      { ticks = 40, run = function(ctx)
+        -- po MIN_TICKS (výstupy z prvního loop() se dokreslí s odstupem od kreslení při nahrání kódu)
+        -- výstupy: signal-A (podklad + ikona), iron-plate na červeném (kruh + ikona); vstup signal-B (podklad + ikona);
+        -- ikona programu je vidět trvale (mimo ALT); 2 šipky
+        H.eq(H.alt_objects(ctx.p), 8, "objekty ALT")
+        H.eq(ctx.p.combinator_description, "Test", "popis budovy z label")
         remote.call("pyntr", "set_code", ctx.p.unit_number, "def loop(): pass")
       end },
-      { ticks = 40, run = function(ctx) H.eq(H.alt_objects(ctx.p), 0, "bez výstupů bez ikon") end },
+      { ticks = 40, run = function(ctx)
+        H.eq(H.alt_objects(ctx.p), 2, "bez výstupů a vstupů jen šipky")
+        H.eq(ctx.p.combinator_description, "", "popis smazaný")
+      end },
     },
   },
 }
