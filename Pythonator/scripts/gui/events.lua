@@ -6,6 +6,7 @@ local actions = require("scripts.actions")
 local window = require("scripts.gui.window")
 local editor = require("scripts.gui.editor")
 local help = require("scripts.gui.help")
+local snippets = require("scripts.gui.snippets")
 
 local M = {}
 
@@ -33,6 +34,18 @@ function CLICK.insert_example(_, st, ctl, element)
   st.text = ex.code
   actions.set_draft(ctl, ex.code)
   window.refresh_unit(ctl.unit)
+end
+
+--- Vložení šablony na místo posledního psaní (st.caret) a označení jejího zástupného slova.
+function CLICK.snippet(_, st, ctl, element)
+  local snip = snippets.get(element.tags.snippet)
+  if not (ctl and snip and actions.view(ctl).can.edit) then return end
+  local text, first, last, caret = snippets.insert(st.refs.code.text, st.caret, snip)
+  editor.set_text(st.refs, text)
+  st.text, st.caret = text, caret
+  actions.set_draft(ctl, text)
+  window.refresh_unit(ctl.unit)
+  editor.select_bytes(st.refs, first, last)
 end
 
 --- Kliknutí, která nepotřebují hlavní okno (nápověda): function(player).
@@ -100,6 +113,7 @@ function M.on_gui_text_changed(event)
   if not (player and ctl) or element.tags.pyntr_action ~= "code" then return end
   local new = element.text
   editor.follow(st.refs, st.text or "", new)
+  st.caret = snippets.caret_after(st.text or "", new)
   st.text = new
   actions.set_draft(ctl, new)
   -- vlastní okno: jen tlačítka a stav (Play se změněným textem), text boxu nepřepisovat

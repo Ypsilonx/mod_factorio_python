@@ -2,6 +2,8 @@
 --- řádků. Box roste s textem (výška = řádky × LINE_HEIGHT + rezerva), takže vnější scroll-pane posouvá
 --- text i čísla řádků současně (ověřeno spikem, docs/development.md → Ověřená rizika).
 --- API nezná pozici kurzoru: pohled se při psaní posune na řádek, kde se text změnil.
+local snippets = require("scripts.gui.snippets")
+
 local M = {}
 
 -- Laditelné rozměry editoru (px). Řádek musí odpovídat fontu pyntr-mono (prototypes/gui.lua).
@@ -110,6 +112,18 @@ end
 function M.set_text(refs, text)
   if refs.code.text ~= text then refs.code.text = text end
   M.resize(refs, M.count_lines(text))
+end
+
+--- Zaměří editor a označí úsek textu (bajty od 1, včetně konce). select počítá znaky, ne bajty
+--- (spike: ověřit ve hře s diakritikou).
+--- @param refs table z build
+--- @param first integer první bajt
+--- @param last integer poslední bajt
+function M.select_bytes(refs, first, last)
+  local text = refs.code.text
+  local chars = snippets.char_count
+  refs.code.focus()
+  refs.code.select(chars(text, first), chars(text, last))
 end
 
 --- Po psaní hráče: přizpůsobí velikost a posune pohled na změněný řádek.

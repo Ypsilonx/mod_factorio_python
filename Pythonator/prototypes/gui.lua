@@ -52,6 +52,8 @@ styles.pyntr_log_scroll = {
   height = 160,
   width = editor.outer_width(),
   padding = 4,
+  -- odstup od lišty tlačítek nad logem (bez něj log lepí na tlačítka)
+  top_margin = 8,
 }
 
 --- Řádek logu: neproporcionální font jako editor.
@@ -59,6 +61,17 @@ styles.pyntr_log_line = {
   type = "label_style",
   parent = "label",
   font = "pyntr-mono",
+}
+
+--- Tlačítko šablony v liště pod editorem: úzké, popisek písmem kódu.
+styles.pyntr_snippet_button = {
+  type = "button_style",
+  parent = "button",
+  font = "pyntr-mono",
+  minimal_width = 0,
+  height = 28,
+  left_padding = 8,
+  right_padding = 8,
 }
 
 --- Pruh chyby pod editorem. Vanilla rodič má bottom_margin = -36 (sahá do prvku pod sebou – překryl by

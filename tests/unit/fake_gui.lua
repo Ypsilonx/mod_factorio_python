@@ -42,6 +42,7 @@ function M.element(spec, parent)
   function e.bring_to_front() e.front = true end
   function e.add_tab(tab, content) e.tabs = e.tabs or {}; e.tabs[#e.tabs + 1] = { tab = tab, content = content } end
   function e.focus() e.focused = true end
+  function e.select(first, last) e.selection = { first, last } end
   function e.get_mod() return "Pythonator" end
   return e
 end

@@ -6,6 +6,7 @@ local actions = require("scripts.actions")
 local editor = require("scripts.gui.editor")
 local status = require("scripts.gui.status")
 local panels = require("scripts.gui.panels")
+local snippets = require("scripts.gui.snippets")
 
 local M = {}
 
@@ -70,6 +71,7 @@ function M.open(player, ctl)
   local left = body.add({ type = "flow", name = "pyntr_left", direction = "vertical" })
   local ed = editor.build(left)
   refs.scroll, refs.gutter, refs.code = ed.scroll, ed.gutter, ed.code
+  refs.snippets = snippets.build_bar(left)
   refs.left = left
   refs.side = body.add({ type = "flow", name = "pyntr_side", direction = "vertical" })
   status.build(left, refs.side, refs)
